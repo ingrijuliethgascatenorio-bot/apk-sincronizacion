@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SGES — Sistema de Gestión de Encuestas de Salud</title>
+  
+  <!-- Hojas de Estilo del Home -->
+  <link rel="stylesheet" href="home.css">
+
+  <!-- Google Font: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Íconos Ionicons -->
+  <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+  <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+</head>
+<body class="home-body">
+
+  <!-- HEADER -->
+  <header class="home-header">
+    <div class="home-header-container">
+      <div class="home-logo-area">
+        <div class="home-logo-icon">
+          <ion-icon name="medical"></ion-icon>
+        </div>
+        <div class="home-logo-text">
+          <span class="home-logo-title">SGES</span>
+          <span class="home-logo-subtitle">Secretaría de Salud</span>
+        </div>
+      </div>
+      <nav class="home-nav">
+        <a href="#caracteristicas" class="home-nav-link">Características</a>
+        <a href="#como-funciona" class="home-nav-link">Cómo funciona</a>
+        <a href="#descargar" class="home-nav-link">Descargar</a>
+      </nav>
+      <div class="home-header-actions">
+        <a href="#descargar" class="home-btn-download-header">Descargar app</a>
+      </div>
+      <button class="home-mobile-menu-btn" id="btn-mobile-menu">
+        <ion-icon name="menu-outline"></ion-icon>
+      </button>
+    </div>
+  </header>
+
+  <!-- MOBILE NAVIGATION DRAWER -->
+  <div class="home-mobile-nav" id="mobile-nav">
+    <a href="#caracteristicas" class="home-mobile-nav-link">Características</a>
+    <a href="#como-funciona" class="home-mobile-nav-link">Cómo funciona</a>
+    <a href="#descargar" class="home-mobile-nav-link">Descargar</a>
+    <a href="#descargar" class="home-mobile-btn-download">Descargar app</a>
+  </div>
+
+  <main>
+    <!-- HERO -->
+    <section class="home-hero">
+      <div class="home-hero-overlay"></div>
+      <div class="home-hero-content">
+        <div class="home-hero-badge">Versión 2.4.1 disponible ahora</div>
+        <h1 class="home-hero-title">Encuestas de salud <br><span class="home-highlight-text">sin límites de señal</span></h1>
+        <p class="home-hero-description">
+          La aplicación oficial de la Secretaría de Salud para encuestadores de campo. Registra, consulta y sincroniza información de personas aunque no tengas conexión a internet.
+        </p>
+        <div class="home-hero-actions">
+          <a href="#descargar" class="home-btn-hero-download">
+            Descargar aplicación
+          </a>
+        </div>
+        <div class="home-hero-tags">
+          <span><ion-icon name="checkmark-circle-outline"></ion-icon> Android 8+</span>
+          <span><ion-icon name="checkmark-circle-outline"></ion-icon> Gratuita</span>
+          <span><ion-icon name="checkmark-circle-outline"></ion-icon> Offline</span>
+          <span><ion-icon name="checkmark-circle-outline"></ion-icon> Sin publicidad</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- CARACTERÍSTICAS -->
+    <section id="caracteristicas" class="home-section home-bg-white">
+      <div class="home-section-container">
+        <div class="home-section-header">
+          <span class="home-section-tagline">FUNCIONALIDADES CLAVE</span>
+          <h2 class="home-section-title">Todo lo que necesitas para trabajar en campo</h2>
+        </div>
+        <div class="home-grid-caracteristicas">
+          <div class="home-card-caracteristica">
+            <div class="home-card-icon"><ion-icon name="cloud-offline-outline"></ion-icon></div>
+            <h3 class="home-card-title">Offline First</h3>
+            <p class="home-card-desc">Trabaja sin conexión a internet. Todos los datos se guardan localmente y se sincronizan automáticamente cuando hay señal.</p>
+          </div>
+          <div class="home-card-caracteristica">
+            <div class="home-card-icon"><ion-icon name="sync-outline"></ion-icon></div>
+            <h3 class="home-card-title">Sincronización Automática</h3>
+            <p class="home-card-desc">Al recuperar la conexión, la aplicación detecta el cambio y sincroniza los registros con el servidor.</p>
+          </div>
+          <div class="home-card-caracteristica">
+            <div class="home-card-icon"><ion-icon name="search-outline"></ion-icon></div>
+            <h3 class="home-card-title">Consulta Rápida</h3>
+            <p class="home-card-desc">Busca personas por nombre o número de documento incluso sin conexión.</p>
+          </div>
+          <div class="home-card-caracteristica">
+            <div class="home-card-icon"><ion-icon name="shield-checkmark-outline"></ion-icon></div>
+            <h3 class="home-card-title">Panel Administrativo</h3>
+            <p class="home-card-desc">Vista gerencial con auditoría, detección de inconsistencias y reportes.</p>
+          </div>
+          <div class="home-card-caracteristica">
+            <div class="home-card-icon"><ion-icon name="time-outline"></ion-icon></div>
+            <h3 class="home-card-title">Historial de Cambios</h3>
+            <p class="home-card-desc">Cada modificación queda registrada con su valor anterior y actual, responsable y fecha.</p>
+          </div>
+          <div class="home-card-caracteristica">
+            <div class="home-card-icon"><ion-icon name="lock-closed-outline"></ion-icon></div>
+            <h3 class="home-card-title">Datos Seguros</h3>
+            <p class="home-card-desc">Control de acceso por roles y trazabilidad de las acciones realizadas.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CÓMO FUNCIONA / PROCESO SENCILLO -->
+    <section id="como-funciona" class="home-section home-bg-navy">
+      <div class="home-section-container">
+        <div class="home-section-header home-text-center">
+          <span class="home-section-tagline">PROCESO</span>
+          <h2 class="home-section-title home-text-white">Tres pasos, cero complicaciones</h2>
+          <p class="home-section-subtitle">Desde la instalación hasta el primer registro, todo toma menos de 5 minutos.</p>
+        </div>
+        
+        <div class="home-proceso-contenedor">
+          <div class="home-proceso-grid">
+            <div class="home-proceso-card">
+              <span class="home-proceso-num">01</span>
+              <div class="home-proceso-icon"><ion-icon name="download-outline"></ion-icon></div>
+              <h3 class="home-proceso-card-title">Descarga la app</h3>
+              <p class="home-proceso-card-desc">Disponible para Android. Instálala en segundos desde Google Play.</p>
+            </div>
+            <div class="home-proceso-card">
+              <span class="home-proceso-num">02</span>
+              <div class="home-proceso-icon"><ion-icon name="pin-outline"></ion-icon></div>
+              <h3 class="home-proceso-card-title">Trabaja en campo</h3>
+              <p class="home-proceso-card-desc">Registra y consulta personas sin importar si tienes señal. La app funciona completamente offline.</p>
+            </div>
+            <div class="home-proceso-card">
+              <span class="home-proceso-num">03</span>
+              <div class="home-proceso-icon"><ion-icon name="swap-horizontal-outline"></ion-icon></div>
+              <h3 class="home-proceso-card-title">Sincroniza automáticamente</h3>
+              <p class="home-proceso-card-desc">Al conectarte a internet, todos tus registros se envían al servidor de forma segura y transparente.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- OFFLINE FIRST -->
+    <section class="home-section home-bg-white">
+      <div class="home-section-container home-split-layout">
+        <div class="home-split-text">
+          <span class="home-section-tagline">TECNOLOGÍA RESILIENTE</span>
+          <h2 class="home-section-title">La señal no determina tu productividad</h2>
+          <p class="home-section-paragraph">
+            Diseñada específicamente para entornos con conectividad nula o inestable. La aplicación gestiona una base de datos local SQLite totalmente encriptada dentro del dispositivo móvil, garantizando que el personal de salud nunca detenga sus labores debido a problemas de red.
+          </p>
+          <div class="home-visual-list">
+            <div class="home-visual-list-item">
+              <ion-icon name="checkmark-circle" class="home-text-teal"></ion-icon>
+              <span>Bajo consumo de batería en modo offline</span>
+            </div>
+            <div class="home-visual-list-item">
+              <ion-icon name="checkmark-circle" class="home-text-teal"></ion-icon>
+              <span>Resolución automática de duplicidad de registros</span>
+            </div>
+          </div>
+        </div>
+        <div class="home-split-visual">
+          <div class="home-mock-device-status">
+            <div class="home-mock-status-header">
+              <span class="home-mock-badge offline"><ion-icon name="cloud-offline"></ion-icon> Sin conexión · Modo offline</span>
+            </div>
+            <div class="home-mock-status-body">
+              <div class="home-mock-stat-row">
+                <span>Registros hoy</span>
+                <strong>18</strong>
+              </div>
+              <div class="home-mock-stat-row">
+                <span>Por sincronizar</span>
+                <strong class="home-text-warning">5</strong>
+              </div>
+              <hr class="home-mock-divider">
+              <div class="home-mock-status-footer-row">
+                <span class="home-text-success"><ion-icon name="wifi"></ion-icon> Conexión restaurada</span>
+                <div class="home-progress-bar-container">
+                  <div class="home-progress-bar-fill" style="width: 70%;"></div>
+                </div>
+                <span class="home-progress-percent">70% Sincronizando</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- IMAGEN INSTITUCIONAL -->
+    <section class="home-seccion-imagen-institucional">
+      <div class="home-inst-overlay"></div>
+      <div class="home-inst-content">
+        <h2 class="home-inst-title">Diseñada para quienes trabajan donde otros no llegan</h2>
+        <p class="home-inst-subtitle">Optimizamos la recolección de información epidemiológica y social para mejorar la toma de decisiones en salud pública y planes de atención comunitaria.</p>
+        <a href="#descargar" class="home-btn-primary-action">
+          Explorar la app <ion-icon name="arrow-forward-outline"></ion-icon>
+        </a>
+      </div>
+    </section>
+
+    <!-- DESCARGA -->
+    <section id="descargar" class="home-section home-bg-white home-text-center">
+      <div class="home-section-container-small">
+        <h2 class="home-section-title">Descarga la app ahora</h2>
+        <p class="home-section-subtitle">Gratuita, segura y exclusiva para Android. Empieza a trabajar en minutos.</p>
+        <div class="home-download-buttons">
+          <a href="./downloads/SaluData.apk" class="home-btn-playstore" id="btn-download-apk" download="SaluData.apk">
+            <ion-icon name="download-outline"></ion-icon>
+            <span>Descargar SaluData</span>
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="home-footer">
+    <div class="home-footer-container">
+      <div class="home-footer-info">
+        <div class="home-logo-area">
+          <div class="home-logo-icon home-bg-teal-dark">
+            <ion-icon name="medical" class="home-text-white"></ion-icon>
+          </div>
+          <span class="home-logo-title home-text-white">SGES</span>
+        </div>
+        <p class="home-footer-desc">
+          Sistema de Gestión de Encuestas de Salud. Una herramienta oficial de la Secretaría de Salud para el levantamiento de información en campo.
+        </p>
+      </div>
+      <div class="home-footer-links-grid">
+        <div class="home-footer-col">
+          <h4>APLICACIÓN</h4>
+          <a href="#caracteristicas">Características</a>
+          <a href="#como-funciona">Cómo funciona</a>
+          <a href="#">Versiones</a>
+          <a href="#">Soporte técnico</a>
+        </div>
+        <div class="home-footer-col">
+          <h4>DOCUMENTOS</h4>
+          <a href="#">Manual de usuario</a>
+          <a href="#">Guía de instalación</a>
+          <a href="#">Política de datos</a>
+          <a href="#">Términos de uso</a>
+        </div>
+        <div class="home-footer-col">
+          <h4>CONTACTO</h4>
+          <a href="#">Mesa de ayuda</a>
+          <a href="#">Capacitaciones</a>
+          <a href="#">Reportar error</a>
+          <a href="mailto:soporte@salud.gov.co" class="home-footer-mail">soporte@salud.gov.co</a>
+        </div>
+      </div>
+    </div>
+    <div class="home-footer-bottom">
+      <p>&copy; 2026 Secretaría de Salud. Todos los derechos reservados.</p>
+    </div>
+  </footer>
+
+  <script src="home.js"></script>
+</body>
+</html>
