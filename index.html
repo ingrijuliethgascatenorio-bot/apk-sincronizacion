@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>SGES — Sistema de Gestión de Encuestas de Salud</title>
+
+  <!-- Hojas de Estilos -->
+  <link rel="stylesheet" href="css/styles.css" />
+
+  <!-- Tipografía Inter y Material Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Íconos Ionicons -->
+  <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+  <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+</head>
+<body>
+
+  <div id="app-container">
+
+    <!-- PANTALLA LOGIN DE ACCESO -->
+    <div id="pantalla-login" class="pantalla-login" style="display: flex;">
+      <div class="login-header">
+        <div class="login-logo"><ion-icon name="medical"></ion-icon></div>
+        <h1 class="login-titulo">SGES Salud</h1>
+        <p class="login-subtitulo">Sistema de Gestión de Encuestas de Salud</p>
+      </div>
+
+      <form id="form-login" onsubmit="appAuth.iniciarSesion(event)">
+        <div class="campo-formulario">
+          <label for="login-usuario">Usuario</label>
+          <input type="text" id="login-usuario" placeholder="Ej: encuestador1" required autocomplete="username" value="encuestador1" />
+        </div>
+
+        <div class="campo-formulario">
+          <label for="login-password">Contraseña</label>
+          <input type="password" id="login-password" placeholder="••••••••" required autocomplete="current-password" value="123456" />
+        </div>
+
+        <button type="submit" class="boton-principal" id="btn-ingresar">
+          <span>Ingresar al Sistema</span>
+        </button>
+
+        <div id="login-error" style="display: none; background-color: var(--color-danger-bg); color: #991b1b; padding: 12px 16px; border-radius: var(--radius-md); border: 1px solid #fecaca; margin-top: 16px; font-size: 0.9rem; font-weight: 600; text-align: center; animation: fadeIn 200ms ease;"></div>
+      </form>
+    </div>
+
+
+    <!-- CONTENEDOR PRINCIPAL DE PANTALLAS TABS -->
+    <div class="vistas-container" id="vistas-container">
+
+      <!-- VISTA: INICIO -->
+      <section id="vista-inicio" class="vista-pagina activa">
+        <div class="encabezado-pagina">
+          <h1 id="inicio-saludo">Hola, Usuario</h1>
+          <p id="inicio-fecha">Encuestador/a de Salud</p>
+        </div>
+
+        <div id="banner-sync" class="banner-estado">
+          <span class="punto-estado"></span>
+          <span id="txt-banner-sync">Cargando estado de sincronización...</span>
+        </div>
+
+        <!-- Métricas Superiores -->
+        <div class="grilla-2x2">
+          <div class="tarjeta-metrica" onclick="appNavegacion.irA('personas', {accion: 'consultar'})">
+            <div class="icono-circulo verde"><ion-icon name="people"></ion-icon></div>
+            <div class="valor-metrica" id="metric-total">0</div>
+            <div class="etiqueta-metrica">Consultadas</div>
+          </div>
+
+          <div class="tarjeta-metrica" onclick="appNavegacion.irA('sincronizar')">
+            <div class="icono-circulo verde"><ion-icon name="cloud-done"></ion-icon></div>
+            <div class="valor-metrica" id="metric-synced">0</div>
+            <div class="etiqueta-metrica">Sincronizadas</div>
+          </div>
+
+          <div class="tarjeta-metrica" onclick="appNavegacion.irA('sincronizar')">
+            <div class="icono-circulo naranja"><ion-icon name="hourglass"></ion-icon></div>
+            <div class="valor-metrica" id="metric-pending">0</div>
+            <div class="etiqueta-metrica">Pendientes</div>
+          </div>
+
+          <div class="tarjeta-metrica" onclick="appNavegacion.irA('sincronizar')">
+            <div class="icono-circulo rojo"><ion-icon name="alert-circle"></ion-icon></div>
+            <div class="valor-metrica" id="metric-errors">0</div>
+            <div class="etiqueta-metrica">Errores</div>
+          </div>
+        </div>
+
+        <h3 style="margin: 8px 16px 12px 16px; font-size: 1.1rem; font-weight: 800;">Acciones Rápidas</h3>
+
+        <div class="grilla-2x2">
+          <div class="tarjeta-metrica" onclick="appPersonas.abrirModalNuevo()">
+            <div class="icono-circulo morado"><ion-icon name="person-add"></ion-icon></div>
+            <div class="etiqueta-metrica" style="font-size: 0.95rem; font-weight: 700; color: var(--color-text);">Registrar Persona</div>
+          </div>
+
+          <div class="tarjeta-metrica" onclick="appNavegacion.irA('personas')">
+            <div class="icono-circulo verde"><ion-icon name="search"></ion-icon></div>
+            <div class="etiqueta-metrica" style="font-size: 0.95rem; font-weight: 700; color: var(--color-text);">Consultar Persona</div>
+          </div>
+
+          <div class="tarjeta-metrica" onclick="appNavegacion.irA('sincronizar')">
+            <div class="icono-circulo verde"><ion-icon name="sync"></ion-icon></div>
+            <div class="etiqueta-metrica" style="font-size: 0.95rem; font-weight: 700; color: var(--color-text);">Sincronizar</div>
+          </div>
+
+          <div class="tarjeta-metrica" onclick="appNavegacion.irA('historial')">
+            <div class="icono-circulo naranja"><ion-icon name="time"></ion-icon></div>
+            <div class="etiqueta-metrica" style="font-size: 0.95rem; font-weight: 700; color: var(--color-text);">Historial</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VISTA: PERSONAS (LISTADO Y BÚSQUEDA) -->
+      <section id="vista-personas" class="vista-pagina">
+        <div class="encabezado-pagina" style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <h1>Consultar Persona</h1>
+            <p id="personas-conteo">0 personas registradas</p>
+          </div>
+          <button class="boton-filtro activo" onclick="appPersonas.abrirModalNuevo()" style="padding: 10px 16px; display: inline-flex; align-items: center; gap: 6px;">
+            <ion-icon name="add"></ion-icon> Nueva
+          </button>
+        </div>
+
+        <div class="caja-buscador">
+          <ion-icon name="search"></ion-icon>
+          <input type="text" id="personas-input-busqueda" placeholder="Buscar por nombre, documento o barrio..." oninput="appPersonas.onBuscarInput(event)" />
+        </div>
+
+        <div class="contenedor-filtros">
+          <button class="boton-filtro activo" data-filter="todos" onclick="appPersonas.setFiltroSync('todos', this)">Todos</button>
+          <button class="boton-filtro" data-filter="sincronizados" onclick="appPersonas.setFiltroSync('sincronizados', this)">Sincronizados</button>
+          <button class="boton-filtro" data-filter="pendientes" onclick="appPersonas.setFiltroSync('pendientes', this)">Pendientes</button>
+          <button class="boton-filtro" data-filter="errores" onclick="appPersonas.setFiltroSync('errores', this)">Errores</button>
+        </div>
+
+        <div id="lista-personas-contenedor">
+          <!-- Tarjetas de personas se inyectan dinámicamente -->
+        </div>
+        <div id="paginacion-personas" class="paginacion-contenedor"></div>
+      </section>
+
+      <!-- VISTA: SINCRONIZACIÓN -->
+      <section id="vista-sincronizar" class="vista-pagina">
+        <div class="encabezado-pagina">
+          <h1>Sincronización</h1>
+          <p>Estado de la base de datos local y remota</p>
+        </div>
+
+        <div class="tarjeta-blanca" style="text-align: center;">
+          <div class="icono-circulo verde" style="margin: 0 auto 12px auto; width: 60px; height: 60px; font-size: 28px;"><ion-icon name="cloud-upload"></ion-icon></div>
+          <h2 id="sync-pendientes-titulo">0 Registros Pendientes</h2>
+          <p style="color: var(--color-text-muted); font-size: 0.9rem; margin-top: 6px;">
+            Los registros pendientes se enviarán al servidor PostgreSQL central cuando exista conexión a Internet.
+          </p>
+
+          <button class="boton-principal" style="margin-top: 20px;" onclick="appSync.ejecutarSincronizacionManual()">
+            <ion-icon name="sync"></ion-icon> Sincronizar Ahora
+          </button></div>
+
+        <h3 style="margin: 16px; font-weight: 800;">Detalle de Registros por Sincronizar</h3>
+        <div id="lista-sync-pendientes">
+          <!-- Lista de registros pendientes -->
+        </div>
+        <div id="paginacion-sync" class="paginacion-contenedor"></div>
+      </section>
+
+      <!-- VISTA: HISTORIAL -->
+      <section id="vista-historial" class="vista-pagina">
+        <div class="encabezado-pagina">
+          <h1>Historial</h1>
+          <p>Registro de sincronizaciones</p>
+        </div>
+
+        <!-- Filtros tipo pill -->
+        <div class="contenedor-filtros" style="margin-bottom: 20px;">
+          <button class="boton-filtro activo" onclick="appHistorial.setFiltroHistorial('todos', this)">Todos</button>
+          <button class="boton-filtro" onclick="appHistorial.setFiltroHistorial('completados', this)">Completados</button>
+          <button class="boton-filtro" onclick="appHistorial.setFiltroHistorial('errores', this)">Con errores</button>
+        </div>
+
+        <div class="timeline-contenedor" id="lista-historial-contenedor">
+          <!-- Registros de historial -->
+        </div>
+        <div id="paginacion-historial" class="paginacion-contenedor"></div>
+      </section>
+
+      <!-- VISTA: REPORTES -->
+      <section id="vista-reportes" class="vista-pagina">
+        <div class="encabezado-pagina">
+          <h1>Reportes de Sincronización</h1>
+          <p>Métricas y desgloses detallados de lotes de sincronización</p>
+        </div>
+
+        <!-- Subvista A: Listado de Sincronizaciones (Visible por defecto) -->
+        <div id="reporte-general-seccion">
+          <div class="filtros-panel" style="margin: 0 16px 20px 16px;">
+            <div class="filtros-panel-header">
+              <span class="filtros-panel-titulo"><ion-icon name="filter-outline"></ion-icon> Filtros de Búsqueda</span>
+            </div>
+            <div class="filtros-grid">
+              <div class="filtro-item">
+                <label for="reportes-input-busqueda">Buscar</label>
+                <input type="text" id="reportes-input-busqueda" placeholder="Buscar por usuario o ID..." oninput="appReportes.onBuscarInput(event)" />
+              </div>
+              <div class="filtro-item">
+                <label for="reportes-filtro-fecha">Filtrar por fecha</label>
+                <input type="date" id="reportes-filtro-fecha" onchange="appReportes.onCambiarFecha(event)" />
+              </div>
+            </div>
+            <div class="filtros-acciones">
+              <button class="boton-secundario" onclick="appReportes.limpiarFiltros()">
+                <ion-icon name="refresh-outline"></ion-icon> Limpiar
+              </button>
+            </div>
+          </div>
+
+          <h3 style="margin: 0 16px 12px 16px; font-weight: 800;">Tus sincronizaciones realizadas</h3>
+          <div id="lista-reportes-sincronizaciones" style="padding: 0 16px;">
+            <!-- Inyectado dinámicamente -->
+          </div>
+          <div id="paginacion-reportes-sync" class="paginacion-contenedor"></div>
+        </div>
+
+        <!-- Subvista B: Detalle de la Sincronización Seleccionada -->
+        <div id="reporte-detalle-seccion" style="display: none; padding: 0 16px 80px 16px;">
+          <div style="margin-bottom: 16px;">
+            <button class="boton-secundario" style="padding: 8px 12px; font-size: 0.85rem; display: flex; align-items: center; gap: 6px; min-height: 48px; border-radius: var(--radius-md);" onclick="appReportes.mostrarListaSincronizaciones()">
+              <ion-icon name="arrow-back-outline"></ion-icon> Volver a Sincronizaciones
+            </button>
+          </div>
+          <div id="reporte-detalle-contenido">
+            <!-- Cargado dinámicamente -->
+          </div>
+        </div>
+      </section>
+
+      <!-- VISTA: PERFIL -->
+      <section id="vista-perfil" class="vista-pagina">
+        <div class="encabezado-pagina">
+          <h1>Perfil de Usuario</h1>
+          <p>Información del encuestador/a activo</p>
+        </div>
+
+        <div class="tarjeta-blanca" style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
+          <div class="avatar-persona" style="width: 64px; height: 64px; font-size: 1.4rem;" id="perfil-avatar">US</div>
+          <div>
+            <h2 id="perfil-nombre" style="font-size: 1.2rem; font-weight: 800;">Usuario</h2>
+            <p style="color: var(--color-text-muted); font-size: 0.9rem;">Encuestador/a de Salud</p>
+          </div>
+        </div>
+
+        <div class="tarjeta-blanca" style="margin-bottom: 16px; padding: 16px;">
+          <h3 style="font-size: 1rem; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+            <ion-icon name="color-palette-outline"></ion-icon> Preferencias de Tema
+          </h3>
+          <div class="campo-formulario" style="margin-bottom: 0;">
+            <label for="perfil-select-tema">Tema visual</label>
+            <select id="perfil-select-tema" onchange="appTema.cambiarTema(this.value)" style="width: 100%; padding: 10px; border-radius: var(--radius-md); border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text);">
+              <option value="light">Tema Claro</option>
+              <option value="dark">Tema Oscuro</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="padding: 16px;">
+          <button class="boton-secundario" onclick="appAuth.cerrarSesion()">
+            <ion-icon name="log-out"></ion-icon> Cerrar Sesión
+          </button>
+        </div>
+      </section>
+
+      <!-- VISTA: ADMIN INICIO (DASHBOARD) -->
+      <section id="vista-admin-inicio" class="vista-pagina">
+        <div class="encabezado-pagina">
+          <h1 id="admin-saludo">Hola, Administrador</h1>
+          <p id="admin-fecha">Panel de Control SGES Salud</p>
+        </div>
+
+        <div class="grilla-2x2">
+          <div class="tarjeta-metrica" onclick="appNavegacion.irA('admin-inconsistencias')">
+            <div class="icono-circulo rojo"><ion-icon name="alert-circle"></ion-icon></div>
+            <div class="valor-metrica" id="admin-metric-pendientes">0</div>
+            <div class="etiqueta-metrica">Inconsistencias Pendientes</div>
+          </div>
+
+          <div class="tarjeta-metrica" onclick="appNavegacion.irA('admin-auditoria')">
+            <div class="icono-circulo verde"><ion-icon name="checkmark-done-circle"></ion-icon></div>
+            <div class="valor-metrica" id="admin-metric-resueltos">0</div>
+            <div class="etiqueta-metrica">Inconsistencias Resueltas</div>
+          </div>
+
+          <div class="tarjeta-metrica">
+            <div class="icono-circulo verde"><ion-icon name="people"></ion-icon></div>
+            <div class="valor-metrica" id="admin-metric-personas">0</div>
+            <div class="etiqueta-metrica">Personas Totales</div>
+          </div>
+
+          <div class="tarjeta-metrica">
+            <div class="icono-circulo morado"><ion-icon name="people-circle"></ion-icon></div>
+            <div class="valor-metrica" id="admin-metric-encuestadores">0</div>
+            <div class="etiqueta-metrica">Encuestadores Activos</div>
+          </div>
+        </div>
+
+        <div style="margin: 20px 16px;">
+          <h3 style="font-size: 1.1rem; font-weight: 800; margin-bottom: 12px;">Sincronizaciones Recientes</h3>
+          <div class="tarjeta-blanca" style="padding: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span>Total de sincronizaciones realizadas:</span>
+              <strong id="admin-metric-syncs">0</strong>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VISTA: ADMIN INCONSISTENCIAS -->
+      <section id="vista-admin-inconsistencias" class="vista-pagina">
+        <div class="encabezado-pagina">
+          <h1>Inconsistencias de Información</h1>
+          <p>Detección de conflictos en la base de datos principal</p>
+        </div>
+
+        <div class="caja-buscador" style="margin: 0 16px 12px 16px;">
+          <ion-icon name="search"></ion-icon>
+          <input type="text" id="admin-inconsistencias-busqueda" placeholder="Buscar por documento..." oninput="appAdmin.onBuscarInconsistencia(event)" />
+        </div>
+
+        <div class="contenedor-filtros" style="margin-bottom: 16px; padding: 0 16px;">
+          <button class="boton-filtro activo" id="btn-filtro-conf-pendientes" onclick="appAdmin.cambiarFiltroConf('PENDIENTE', this)">Pendientes</button>
+          <button class="boton-filtro" id="btn-filtro-conf-resueltos" onclick="appAdmin.cambiarFiltroConf('RESUELTO', this)">Resueltos</button>
+        </div>
+
+        <div id="lista-conflictos-contenedor" style="padding: 0 16px 20px 16px;">
+          <!-- Aquí se inyectan dinámicamente las inconsistencias agrupadas por persona -->
+        </div>
+        <div id="paginacion-conflictos" class="paginacion-contenedor" style="padding: 0 16px 80px 16px;"></div>
+      </section>
+
+      <!-- VISTA: ADMIN AUDITORÍA -->
+      <section id="vista-admin-auditoria" class="vista-pagina">
+        <div class="encabezado-pagina">
+          <h1>Auditoría y Resoluciones</h1>
+          <p>Historial de cambios aplicados a las personas registradas</p>
+        </div>
+
+        <div class="filtros-panel" style="margin: 0 16px 20px 16px;">
+          <div class="filtros-panel-header">
+            <span class="filtros-panel-titulo"><ion-icon name="filter-outline"></ion-icon> Filtros de Auditoría</span>
+          </div>
+          <div class="filtros-grid">
+            <div class="filtro-item">
+              <label for="admin-auditoria-busqueda">Documento</label>
+              <input type="text" id="admin-auditoria-busqueda" placeholder="Buscar por documento..." oninput="appAdmin.onBuscarAuditoria(event)" />
+            </div>
+            <div class="filtro-item">
+              <label for="admin-auditoria-fecha">Filtrar por fecha</label>
+              <input type="date" id="admin-auditoria-fecha" onchange="appAdmin.onCambiarFechaAuditoria(event)" />
+            </div>
+          </div>
+          <div class="filtros-acciones">
+            <button class="boton-secundario" onclick="appAdmin.filtrarHoyAuditoria()">Hoy</button>
+            <button class="boton-secundario" onclick="appAdmin.limpiarFiltrosAuditoria()">
+              <ion-icon name="refresh-outline"></ion-icon> Limpiar
+            </button>
+          </div>
+        </div>
+
+        <div id="lista-auditoria-contenedor" style="padding: 0 16px 20px 16px;">
+          <!-- Aquí se inyectan las resoluciones y auditorías -->
+        </div>
+        <div id="paginacion-auditoria" class="paginacion-contenedor" style="padding: 0 16px 80px 16px;"></div>
+      </section>
+
+      <!-- VISTA: ADMIN REPORTES -->
+      <section id="vista-admin-reportes" class="vista-pagina">
+        <div class="encabezado-pagina">
+          <h1>Reportes Administrativos</h1>
+          <p>Métricas generales y reportes de sincronizaciones</p>
+        </div>
+
+        <div style="padding: 0 16px 20px 16px;">
+          <div class="tarjeta-blanca" style="margin-bottom: 20px;">
+            <h3>Resumen General de Datos</h3>
+            <div id="admin-reporte-general" style="margin-top: 12px;">
+              <!-- Resumen dinámico -->
+            </div>
+          </div>
+
+          <!-- Estructura idéntica al flujo de reportes para poder ver las sincronizaciones centralizadas -->
+          <div id="admin-reportes-lotes-seccion">
+            <div class="filtros-panel" style="margin-bottom: 20px;">
+              <div class="filtros-panel-header">
+                <span class="filtros-panel-titulo"><ion-icon name="filter-outline"></ion-icon> Filtros de Lotes y Sincronizaciones</span>
+              </div>
+              <div class="filtros-grid">
+                <div class="filtro-item">
+                  <label for="admin-reportes-busqueda">Buscar</label>
+                  <input type="text" id="admin-reportes-busqueda" placeholder="Buscar por encuestador o ID..." oninput="appAdminReportes.onBuscarInput(event)" />
+                </div>
+                <div class="filtro-item">
+                  <label for="admin-reportes-fecha">Filtrar por fecha</label>
+                  <input type="date" id="admin-reportes-fecha" onchange="appAdminReportes.onCambiarFecha(event)" />
+                </div>
+              </div>
+              <div class="filtros-acciones">
+                <button class="boton-secundario" onclick="appAdminReportes.limpiarFiltros()">
+                  <ion-icon name="refresh-outline"></ion-icon> Limpiar
+                </button>
+              </div>
+            </div>
+
+            <div id="admin-lista-reportes-sincronizaciones">
+              <!-- Inyectado dinámicamente -->
+            </div>
+            <div id="admin-paginacion-reportes-sync" class="paginacion-contenedor" style="margin-top: 12px;"></div>
+          </div>
+
+          <!-- Subvista Detalle para Admin -->
+          <div id="admin-reporte-detalle-seccion" style="display: none; margin-top: 20px;">
+            <div style="margin-bottom: 16px;">
+              <button class="boton-secundario" style="padding: 8px 12px; font-size: 0.85rem; display: flex; align-items: center; gap: 6px; min-height: 48px; border-radius: var(--radius-md);" onclick="appAdminReportes.mostrarListaSincronizaciones()">
+                <ion-icon name="arrow-back-outline"></ion-icon> Volver a Sincronizaciones
+              </button>
+            </div>
+            <div id="admin-reporte-detalle-contenido">
+              <!-- Cargado dinámicamente -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VISTA: ADMIN PERFIL -->
+      <section id="vista-admin-perfil" class="vista-pagina">
+        <div class="encabezado-pagina">
+          <h1>Perfil de Administrador</h1>
+          <p>Información del usuario administrativo</p>
+        </div>
+
+        <div class="tarjeta-blanca" style="display: flex; align-items: center; gap: 16px; margin: 0 16px 16px 16px;">
+          <div class="avatar-persona" style="width: 64px; height: 64px; font-size: 1.4rem; background-color: var(--color-danger);" id="admin-perfil-avatar">AD</div>
+          <div>
+            <h2 id="admin-perfil-nombre" style="font-size: 1.2rem; font-weight: 800;">Administrador</h2>
+            <p style="color: var(--color-text-muted); font-size: 0.9rem;">Rol: ADMIN</p>
+          </div>
+        </div>
+
+        <div class="tarjeta-blanca" style="margin: 0 16px 16px 16px; padding: 16px;">
+          <h3 style="font-size: 1rem; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+            <ion-icon name="color-palette-outline"></ion-icon> Preferencias de Tema
+          </h3>
+          <div class="campo-formulario" style="margin-bottom: 0;">
+            <label for="admin-select-tema">Tema visual</label>
+            <select id="admin-select-tema" onchange="appTema.cambiarTema(this.value)" style="width: 100%; padding: 10px; border-radius: var(--radius-md); border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text);">
+              <option value="light">Tema Claro</option>
+              <option value="dark">Tema Oscuro</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="padding: 16px;">
+          <button class="boton-secundario" onclick="appAuth.cerrarSesion()">
+            <ion-icon name="log-out"></ion-icon> Cerrar Sesión
+          </button>
+        </div>
+      </section>
+
+    </div>
+
+
+    <!-- BARRA DE NAVEGACIÓN INFERIOR (TABS) -->
+    <nav class="barra-navegacion" id="barra-navegacion">
+      <button class="boton-tab activo" data-tab="inicio" onclick="appNavegacion.irA('inicio')">
+        <span class="icono-tab"><ion-icon name="home-outline"></ion-icon></span>
+        <span>Inicio</span>
+      </button>
+
+      <button class="boton-tab" data-tab="personas" onclick="appNavegacion.irA('personas')">
+        <span class="icono-tab"><ion-icon name="people-outline"></ion-icon></span>
+        <span>Personas</span>
+      </button>
+
+      <button class="boton-tab" data-tab="sincronizar" onclick="appNavegacion.irA('sincronizar')">
+        <span class="icono-tab"><ion-icon name="sync-outline"></ion-icon></span>
+        <span>Sincronizar</span>
+      </button>
+
+      <button class="boton-tab" data-tab="historial" onclick="appNavegacion.irA('historial')">
+        <span class="icono-tab"><ion-icon name="time-outline"></ion-icon></span>
+        <span>Historial</span>
+      </button>
+
+      <button class="boton-tab" data-tab="reportes" onclick="appNavegacion.irA('reportes')">
+        <span class="icono-tab"><ion-icon name="bar-chart-outline"></ion-icon></span>
+        <span>Reportes</span>
+      </button>
+
+      <button class="boton-tab" data-tab="perfil" onclick="appNavegacion.irA('perfil')">
+        <span class="icono-tab"><ion-icon name="person-circle-outline"></ion-icon></span>
+        <span>Perfil</span>
+      </button>
+    </nav>
+
+    <!-- BARRA DE NAVEGACIÓN INFERIOR PARA ADMINISTRADOR (TABS) -->
+    <nav class="barra-navegacion" id="barra-navegacion-admin" style="display: none;">
+      <button class="boton-tab activo" data-tab="admin-inicio" onclick="appNavegacion.irA('admin-inicio')">
+        <span class="icono-tab"><ion-icon name="speedometer-outline"></ion-icon></span>
+        <span>Inicio</span>
+      </button>
+
+      <button class="boton-tab" data-tab="admin-inconsistencias" onclick="appNavegacion.irA('admin-inconsistencias')">
+        <span class="icono-tab"><ion-icon name="warning-outline"></ion-icon></span>
+        <span>Inconsistencias</span>
+      </button>
+
+      <button class="boton-tab" data-tab="admin-auditoria" onclick="appNavegacion.irA('admin-auditoria')">
+        <span class="icono-tab"><ion-icon name="shield-checkmark-outline"></ion-icon></span>
+        <span>Auditoría</span>
+      </button>
+
+      <button class="boton-tab" data-tab="admin-reportes" onclick="appNavegacion.irA('admin-reportes')">
+        <span class="icono-tab"><ion-icon name="bar-chart-outline"></ion-icon></span>
+        <span>Reportes</span>
+      </button>
+
+      <button class="boton-tab" data-tab="admin-perfil" onclick="appNavegacion.irA('admin-perfil')">
+        <span class="icono-tab"><ion-icon name="person-circle-outline"></ion-icon></span>
+        <span>Perfil</span>
+      </button>
+    </nav>
+
+    <!-- MODAL ÚNICO REUTILIZABLE: FORMULARIO PERSONA (REGISTRAR / CONSULTAR / EDITAR) -->
+    <div id="modal-persona" class="modal-overlay">
+      <div class="modal-contenido">
+        <div class="modal-header">
+          <h2 id="modal-persona-titulo">Registrar Persona</h2>
+          <button class="boton-cerrar-modal" onclick="appPersonas.cerrarModal()">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <form id="form-persona" onsubmit="appPersonas.guardarFormulario(event)">
+            <input type="hidden" id="persona-id" />
+
+            <div class="campo-formulario">
+              <label for="persona-nombres">Nombres completas *</label>
+              <input type="text" id="persona-nombres" required placeholder="Ej: Maria Fernanda" />
+            </div>
+
+            <div class="campo-formulario">
+              <label for="persona-apellidos">Apellidos completos *</label>
+              <input type="text" id="persona-apellidos" required placeholder="Ej: Gomez Perez" />
+            </div>
+
+            <div class="campo-formulario">
+              <label for="persona-tipo-doc">Tipo de Documento *</label>
+              <select id="persona-tipo-doc" required>
+                <option value="1">Cédula de Ciudadanía (CC)</option>
+                <option value="2">Tarjeta de Identidad (TI)</option>
+                <option value="3">Cédula de Extranjería (CE)</option>
+                <option value="4">Pasaporte (PP)</option>
+                <option value="5">Registro Civil (RC)</option>
+              </select>
+            </div>
+
+            <div class="campo-formulario">
+              <label for="persona-numero-doc">Número de Documento *</label>
+              <input type="text" id="persona-numero-doc" required placeholder="Ej: 1098765432" />
+            </div>
+
+            <div class="campo-formulario">
+              <label for="persona-fecha-nac">Fecha de Nacimiento *</label>
+              <input type="date" id="persona-fecha-nac" required />
+            </div>
+
+            <div class="campo-formulario">
+              <label for="persona-genero">Género *</label>
+              <select id="persona-genero" required>
+                <option value="F">Femenino</option>
+                <option value="M">Masculino</option>
+                <option value="O">Otro / Prefiero no decir</option>
+              </select>
+            </div>
+
+            <div class="campo-formulario">
+              <label for="persona-eps">EPS *</label>
+              <select id="persona-eps" required onchange="appPersonas.onCambioEps(this)">
+                <option value="1">Sura EPS</option>
+                <option value="2">Sanitas EPS</option>
+                <option value="3">Nueva EPS</option>
+                <option value="4">Salud Total</option>
+                <option value="5">Savia Salud</option>
+                <option value="99">Otra EPS</option>
+              </select>
+            </div>
+
+            <div class="campo-formulario" id="campo-eps-otro" style="display: none;">
+              <label for="persona-eps-otro">¿Cuál EPS? *</label>
+              <input type="text" id="persona-eps-otro" placeholder="Escribe el nombre de la EPS" />
+            </div>
+
+            <div class="campo-formulario">
+              <label for="persona-telefono">Teléfono / Celular</label>
+              <input type="tel" id="persona-telefono" placeholder="Ej: 3001234567" />
+            </div>
+
+            <div class="campo-formulario">
+              <label for="persona-correo">Correo electrónico</label>
+              <input type="email" id="persona-correo" placeholder="Ej: persona@correo.com" />
+            </div>
+
+            <div class="campo-formulario">
+              <label for="persona-estrato">Estrato</label>
+              <select id="persona-estrato">
+                <option value="">Sin especificar</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+              </select>
+            </div>
+
+            <div class="campo-formulario">
+              <label for="persona-estado-civil">Estado Civil</label>
+              <select id="persona-estado-civil">
+                <option value="">Sin especificar</option>
+                <option value="Soltero">Soltero/a</option>
+                <option value="Casado">Casado/a</option>
+                <option value="UnionLibre">Unión Libre</option>
+                <option value="Divorciado">Divorciado/a</option>
+              </select>
+            </div>
+
+            <div class="campo-formulario">
+              <label for="persona-barrio">Barrio / Comuna</label>
+              <input type="text" id="persona-barrio" placeholder="Ej: El Poblado" />
+            </div>
+
+            <div class="campo-formulario">
+              <label for="persona-direccion">Dirección de residencia</label>
+              <input type="text" id="persona-direccion" placeholder="Ej: Calle 10 # 43-20" />
+            </div>
+
+            <div style="margin-top: 24px; display: flex; gap: 12px;">
+              <button type="submit" class="boton-principal" id="btn-guardar-persona">
+                <ion-icon name="save"></ion-icon> Guardar Registro
+              </button>
+              
+              <button type="button" class="boton-secundario" id="btn-inactivar-persona" style="display: none;" onclick="appPersonas.inactivarPersonaActual()">
+                <ion-icon name="ban"></ion-icon> Inactivar
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL DE CONFLICTO: COMPARACIÓN Y RESOLUCIÓN -->
+    <div id="modal-conflicto" class="modal-overlay">
+      <div class="modal-contenido" style="max-height: 90vh; overflow-y: auto;">
+        <div class="modal-header">
+          <h2>Revisar Conflicto</h2>
+          <button class="boton-cerrar-modal" onclick="appAdmin.cerrarModalConflicto()">✕</button>
+        </div>
+
+        <div class="modal-body" style="padding: 16px;">
+          <div style="margin-bottom: 16px; border-bottom: 1px solid var(--color-border); padding-bottom: 12px;">
+            <h4 id="conf-persona-nombre" style="font-size: 1.1rem; font-weight: 800; color: var(--color-primary);">Cargando...</h4>
+            <p id="conf-persona-doc" style="color: var(--color-text-muted); font-size: 0.9rem;"></p>
+          </div>
+
+          <div style="background-color: var(--color-background); border-radius: var(--radius-md); padding: 12px; margin-bottom: 16px;">
+            <p style="font-size: 0.85rem; color: var(--color-text-muted); font-weight: 600; text-transform: uppercase;">Campo Afectado</p>
+            <h3 id="conf-campo-nombre" style="font-size: 1.2rem; font-weight: 800; color: var(--color-text); margin-top: 4px;">Barrio</h3>
+          </div>
+
+          <div class="grilla-2x2" style="gap: 12px; margin-bottom: 16px;">
+            <div class="tarjeta-blanca" style="border: 2px solid var(--color-success); padding: 12px;">
+              <span style="font-size: 0.8rem; font-weight: 600; color: var(--color-success); text-transform: uppercase;">Dato Oficial Actual</span>
+              <p id="conf-dato-oficial" style="font-size: 1.05rem; font-weight: 800; margin-top: 8px;"></p>
+            </div>
+            
+            <div class="tarjeta-blanca" style="border: 2px solid var(--color-warning); padding: 12px;">
+              <span style="font-size: 0.8rem; font-weight: 600; color: var(--color-warning); text-transform: uppercase;">Dato Recibido</span>
+              <p id="conf-dato-recibido" style="font-size: 1.05rem; font-weight: 800; margin-top: 8px;"></p>
+            </div>
+          </div>
+
+          <div class="tarjeta-blanca" style="padding: 12px; margin-bottom: 16px; font-size: 0.9rem;">
+            <div style="margin-bottom: 4px;"><strong>Encuestador:</strong> <span id="conf-info-encuestador"></span></div>
+            <div style="margin-bottom: 4px;"><strong>Fecha de Envío:</strong> <span id="conf-info-fecha"></span></div>
+            <div style="margin-bottom: 8px;"><strong>Origen:</strong> <span id="conf-info-origen" class="insignia pendiente"></span></div>
+            <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--color-border); display: flex; justify-content: space-between; font-size: 0.85rem;">
+              <div><strong>Versión Servidor:</strong> <span id="conf-info-version-servidor" style="font-weight: bold; color: var(--color-success);">-</span></div>
+              <div><strong>Versión Encuestador:</strong> <span id="conf-info-version-encuestador" style="font-weight: bold; color: var(--color-warning);">-</span></div>
+            </div>
+          </div>
+
+          <form id="form-resolucion-conflicto" onsubmit="appAdmin.guardarResolucion(event)">
+            <input type="hidden" id="resolucion-conf-id" />
+            
+            <div class="campo-formulario">
+              <label for="resolucion-decision">Decisión de Resolución *</label>
+              <select id="resolucion-decision" required onchange="appAdmin.onCambioDecisionResolucion(this)">
+                <option value="MANTENER_ACTUAL">Mantener dato actual oficial</option>
+                <option value="ACEPTAR_NUEVO">Aceptar dato recibido del encuestador</option>
+                <option value="EDICION_MANUAL">Editar dato manualmente</option>
+              </select>
+            </div>
+
+            <div class="campo-formulario" id="campo-resolucion-manual" style="display: none;">
+              <label for="resolucion-valor-manual">Introduce el Valor Aprobado *</label>
+              <input type="text" id="resolucion-valor-manual" placeholder="Escribe el valor definitivo" />
+            </div>
+
+            <div class="campo-formulario">
+              <label for="resolucion-motivo">Motivo / Justificación *</label>
+              <textarea id="resolucion-motivo" required placeholder="Escribe la razón de esta resolución administrativa" rows="3" style="width: 100%; border-radius: var(--radius-md); border: 1px solid var(--color-border); padding: 8px; font-family: inherit; font-size: 0.9rem;"></textarea>
+            </div>
+
+            <button type="submit" class="boton-principal" style="width: 100%; margin-top: 12px;">
+              <ion-icon name="checkmark-circle"></ion-icon> Resolver Conflicto
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- MÓDULOS JAVASCRIPT MODULARES (ES6) -->
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>
