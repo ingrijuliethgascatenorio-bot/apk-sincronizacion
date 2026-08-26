@@ -14,7 +14,8 @@ class ApiService {
   getHeaders() {
     const headers = {
       'Content-Type': 'application/json',
-      'Accept': 'application/json'
+      'Accept': 'application/json',
+      'ngrok-skip-browser-warning': '69420'
     };
     const token = localStorage.getItem('auth_token');
     if (token) {
@@ -29,11 +30,29 @@ class ApiService {
     return `${base}/${path}`;
   }
 
+  /**
+   * fetch() con timeout: en un WebView Android, si el DNS o el TLS handshake
+   * se cuelgan (dominio mal resuelto, certificado inválido, firewall que
+   * descarta paquetes en vez de rechazarlos), fetch() puede quedar colgado
+   * indefinidamente en vez de lanzar un error. Sin este timeout el usuario
+   * ve la rueda de "Sincronizando..." girar para siempre y no un mensaje de
+   * error claro.
+   */
+  async fetchConTimeout(url, opciones, timeoutMs = 15000) {
+    const controlador = new AbortController();
+    const timer = setTimeout(() => controlador.abort(), timeoutMs);
+    try {
+      return await fetch(url, { ...opciones, signal: controlador.signal });
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
   async get(endpoint) {
     const url = this.buildUrl(endpoint);
     console.log(`🌐 [HTTP GET] ${url}`);
     try {
-      const response = await fetch(url, {
+      const response = await this.fetchConTimeout(url, {
         method: 'GET',
         headers: this.getHeaders()
       });
@@ -49,7 +68,7 @@ class ApiService {
     const url = this.buildUrl(endpoint);
     console.log(`🌐 [HTTP POST] ${url}`, body);
     try {
-      const response = await fetch(url, {
+      const response = await this.fetchConTimeout(url, {
         method: 'POST',
         headers: this.getHeaders(),
         body: JSON.stringify(body)
@@ -66,7 +85,7 @@ class ApiService {
     const url = this.buildUrl(endpoint);
     console.log(`🌐 [HTTP PUT] ${url}`, body);
     try {
-      const response = await fetch(url, {
+      const response = await this.fetchConTimeout(url, {
         method: 'PUT',
         headers: this.getHeaders(),
         body: JSON.stringify(body)
@@ -83,7 +102,7 @@ class ApiService {
     const url = this.buildUrl(endpoint);
     console.log(`🌐 [HTTP DELETE] ${url}`);
     try {
-      const response = await fetch(url, {
+      const response = await this.fetchConTimeout(url, {
         method: 'DELETE',
         headers: this.getHeaders()
       });
@@ -124,9 +143,16 @@ class ApiService {
   }
 
   manejarErrorRed(err, url) {
-    if (err.name === 'TypeError' || err.message.includes('Failed to fetch')) {
+    if (err.name === 'AbortError') {
       throw new Error(
-        `No se pudo conectar al Backend (${url}). Verifica que el servidor NestJS esté corriendo ('npm run start:dev') y que tu celular esté en la misma red Wi-Fi.`
+        `El servidor (${url}) tardó demasiado en responder y se canceló la petición. ` +
+        `Puede ser tu conexión a Internet o que el servidor esté saturado/caído. Intenta de nuevo.`
+      );
+    }
+    if (err.name === 'TypeError' || (err.message || '').includes('Failed to fetch')) {
+      throw new Error(
+        `No se pudo conectar al servidor backend (${url}).\n` +
+        `Verifica que el backend local ('npm run start:dev') y el túnel de ngrok estén activos y accesibles.`
       );
     }
     throw err;

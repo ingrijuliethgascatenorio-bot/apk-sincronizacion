@@ -79,6 +79,53 @@ class AuthService {
     }
     return localStorage.getItem(this.userKey) || 'Administrador';
   }
+
+  /**
+   * SESIÓN DESLIZANTE
+   * -----------------
+   * El token dura varias horas (ver JWT_EXPIRES_IN en el backend), pero si
+   * el encuestador está usando la app activamente durante una jornada larga
+   * no queremos que lo saque a mitad de una encuesta. Por eso, cuando falta
+   * poco para que expire, pedimos uno nuevo en segundo plano usando
+   * POST /auth/refresh (válido mientras el token actual NO haya expirado
+   * todavía). Si de verdad pasó más tiempo del que dura el token sin usar
+   * la app, esto fallará con 401 y el usuario tendrá que loguearse de
+   * nuevo — eso es correcto y esperado.
+   */
+  segundosParaExpirar() {
+    const payload = this.obtenerPayload();
+    if (!payload?.exp) return null;
+    return payload.exp - Math.floor(Date.now() / 1000);
+  }
+
+  /**
+   * Refresca el token si está a menos de `margenSegundos` de expirar.
+   * No hace nada (ni llama a la red) si el token todavía tiene tiempo de
+   * sobra, para no gastar peticiones innecesarias.
+   */
+  async refrescarSiNecesario(margenSegundos = 30 * 60) {
+    if (!this.estaAutenticado()) return;
+
+    const restante = this.segundosParaExpirar();
+    // null = no se pudo leer el token (corrupto); negativo o bajo = ya
+    // expiró o está por expirar. En ambos casos NO intentamos refrescar
+    // uno que probablemente ya no sirve; dejamos que la próxima llamada
+    // real reciba el 401 y se maneje como corresponde (logout + login).
+    if (restante === null || restante <= 0) return;
+    if (restante > margenSegundos) return;
+
+    try {
+      const data = await apiService.post('/auth/refresh', {});
+      if (data && data.access_token) {
+        localStorage.setItem(this.tokenKey, data.access_token);
+        console.log('🔄 [AuthService] Sesión renovada automáticamente (sesión deslizante).');
+      }
+    } catch (e) {
+      // Si falla (ya expiró, sin red, etc.) no hacemos nada especial aquí:
+      // la próxima petición real disparará el manejo normal de 401.
+      console.warn('⚠️ [AuthService] No se pudo renovar el token automáticamente:', e.message);
+    }
+  }
 }
 
 export const authService = new AuthService();

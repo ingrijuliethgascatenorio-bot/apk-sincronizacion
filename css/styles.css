@@ -16,7 +16,6 @@
   /* Colores de fondo y superficies */
   --color-bg: #f8fafc;
   /* Slate 50 - Fondo nativo moderno */
-  --color-background: var(--color-bg);
   --color-surface: #ffffff;
   /* Superficie de tarjeta blanca */
   --color-surface-variant: #f1f5f9;
@@ -64,7 +63,6 @@
 /* Reglas de variables para Tema Oscuro */
 body.theme-dark {
   --color-bg: #0f172a; /* Slate 900 */
-  --color-background: #0f172a;
   --color-surface: #1e293b; /* Slate 800 */
   --color-surface-variant: #334155; /* Slate 700 */
   --color-border: #334155; /* Slate 700 */
@@ -72,23 +70,17 @@ body.theme-dark {
   --color-text-muted: #94a3b8; /* Slate 400 */
   --color-primary-rgba: rgba(20, 184, 166, 0.15);
   --color-accent-bg: #0c4a6e; /* Azul oscuro suave */
-  --color-success-bg: rgba(16, 185, 129, 0.2);
-  --color-warning-bg: rgba(245, 158, 11, 0.2);
-  --color-danger-bg: rgba(239, 68, 68, 0.2);
-  --color-info-bg: rgba(99, 102, 241, 0.2);
 }
 
 body.theme-dark .barra-navegacion {
   background: rgba(30, 41, 59, 0.94);
-  border-top-color: var(--color-border);
-  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.2);
 }
 
 body.theme-dark .tarjeta-blanca,
+body.theme-dark .tarjeta-historial,
 body.theme-dark .tarjeta-persona,
-body.theme-dark .tarjeta-metrica,
-body.theme-dark .tarjeta-inconsistencia,
-body.theme-dark .filtros-panel {
+body.theme-dark .tarjeta-metrica {
   background: var(--color-surface);
   border-color: var(--color-border);
 }
@@ -96,44 +88,14 @@ body.theme-dark .filtros-panel {
 body.theme-dark input,
 body.theme-dark select,
 body.theme-dark textarea {
-  background-color: var(--color-surface);
-  color: var(--color-text);
-  border-color: var(--color-border);
-}
-
-body.theme-dark input::placeholder,
-body.theme-dark textarea::placeholder {
-  color: var(--color-text-muted);
+  background: #1e293b !important;
+  color: #f8fafc !important;
+  border-color: #334155 !important;
 }
 
 body.theme-dark .modal-contenido {
-  background-color: var(--color-surface);
-  color: var(--color-text);
-  border: 1px solid var(--color-border);
-}
-
-body.theme-dark .modal-header {
-  border-bottom-color: var(--color-border);
-}
-
-body.theme-dark .insignia.sincronizado {
-  background: var(--color-success-bg);
-  color: #34d399;
-}
-
-body.theme-dark .insignia.pendiente {
-  background: var(--color-warning-bg);
-  color: #fbbf24;
-}
-
-body.theme-dark .insignia.error {
-  background: var(--color-danger-bg);
-  color: #f87171;
-}
-
-body.theme-dark .insignia.inactivo {
-  background: var(--color-surface-variant);
-  color: var(--color-text-muted);
+  background: #1e293b !important;
+  color: #f8fafc !important;
 }
 
 /* Base y Reset */
@@ -385,6 +347,189 @@ body {
   padding: 20px;
   margin-bottom: 16px;
   transition: transform 200ms ease, box-shadow 200ms ease;
+}
+
+/* ==========================================================================
+   TARJETA E INSIGNIA — VISTA HISTORIAL (clases propias, separadas de
+   .tarjeta-blanca / .insignia que usa Reportes, para que un ajuste en una
+   vista no afecte por accidente a la otra)
+   ========================================================================== */
+.tarjeta-historial {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--elevation-1);
+  padding: 20px;
+  margin-bottom: 16px;
+  transition: transform 200ms ease, box-shadow 200ms ease;
+}
+
+.insignia-historial {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.insignia-historial.exito {
+  background: var(--color-success-bg);
+  color: #065f46;
+}
+
+.insignia-historial.error {
+  background: var(--color-danger-bg);
+  color: #991b1b;
+}
+
+.insignia-historial.pendiente {
+  background: var(--color-warning-bg);
+  color: #92400e;
+}
+
+/* ==========================================================================
+   TIMELINE VERTICAL — VISTA HISTORIAL
+   ========================================================================== */
+.historial-timeline {
+  display: flex;
+  flex-direction: column;
+}
+
+.historial-item {
+  display: flex;
+  gap: 12px;
+  align-items: stretch;
+}
+
+.historial-timeline-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 16px;
+  flex-shrink: 0;
+  padding-top: 6px;
+}
+
+.historial-punto {
+  width: 14px;
+  height: 14px;
+  min-height: 14px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  z-index: 1;
+  box-shadow: 0 0 0 3px var(--color-bg);
+}
+
+.historial-punto.exito {
+  background: var(--color-success, #10b981);
+}
+
+.historial-punto.error {
+  background: var(--color-danger, #ef4444);
+}
+
+.historial-linea {
+  width: 2px;
+  flex: 1;
+  min-height: 12px;
+  background: var(--color-border);
+  margin-top: 2px;
+}
+
+.historial-card-col {
+  flex: 1;
+  min-width: 0;
+  padding-bottom: 16px;
+}
+
+.historial-encabezado {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.historial-fecha {
+  font-size: 0.95rem;
+}
+
+.historial-hora {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.insignia-historial ion-icon {
+  font-size: 0.95rem;
+  margin-right: 2px;
+  vertical-align: -2px;
+}
+
+.historial-metricas {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin: 14px 0 10px 0;
+}
+
+.historial-metrica {
+  text-align: center;
+  padding: 8px 4px;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-variant, #f1f5f9);
+  min-width: 0;
+}
+
+.historial-metrica-valor {
+  display: block;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+.historial-metrica-label {
+  display: block;
+  font-size: 0.65rem;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.historial-inconsistencias {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  background: var(--color-warning-bg);
+  color: #92400e;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.historial-inconsistencias ion-icon {
+  font-size: 1rem;
+  vertical-align: -2px;
+  margin-right: 2px;
+}
+
+.historial-inconsistencias-valor {
+  font-weight: 800;
+}
+
+body.theme-dark .historial-metrica {
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .grilla-2x2 {
@@ -907,65 +1052,57 @@ body {
   margin-bottom: 8px;
 }
 
-body.theme-dark .skeleton {
-  background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
-  background-size: 200% 100%;
-}
-
 /* ==========================================================================
-   PAGINACIÓN NATIVA Y ERGONÓMICA
+   PAGINACIÓN — usada tanto por Reportes como por Historial (misma clase,
+   mismo componente renderizarPaginador(); no se toca su lógica, solo estilo)
    ========================================================================== */
 .paginacion-contenedor {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
-  margin-top: 20px;
-  padding: 12px 4px;
+  gap: 10px;
+  padding: 16px 16px 24px 16px;
 }
 
 .paginacion-info {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   color: var(--color-text-muted);
-  font-weight: 500;
 }
 
 .paginacion-botones {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   flex-wrap: wrap;
   justify-content: center;
 }
 
 .boton-pag {
-  min-width: 36px;
-  height: 36px;
+  min-width: 34px;
+  height: 34px;
   padding: 0 8px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--color-border);
   background: var(--color-surface);
   color: var(--color-text);
-  border-radius: var(--radius-md);
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   font-weight: 600;
-  cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: all 150ms ease;
+  cursor: pointer;
+  transition: background 150ms ease, border-color 150ms ease, color 150ms ease;
 }
 
-.boton-pag:hover:not(.disabled):not(.elipsis) {
+.boton-pag:hover:not(.disabled):not(.activo):not(.elipsis) {
+  background: var(--color-surface-variant, #f1f5f9);
   border-color: var(--color-primary);
-  color: var(--color-primary);
-  background: var(--color-primary-rgba);
 }
 
 .boton-pag.activo {
   background: var(--color-primary);
-  color: white;
   border-color: var(--color-primary);
-  box-shadow: var(--elevation-1);
+  color: #ffffff;
 }
 
 .boton-pag.disabled {
@@ -978,274 +1115,77 @@ body.theme-dark .skeleton {
   border: none;
   background: transparent;
   cursor: default;
-}
-
-/* ==========================================================================
-   PANEL DE FILTROS ORGANIZADO
-   ========================================================================== */
-.filtros-panel {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: 16px;
-  margin-bottom: 20px;
-  box-shadow: var(--elevation-1);
-}
-
-.filtros-panel-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
-}
-
-.filtros-panel-titulo {
-  font-size: 0.9rem;
   font-weight: 700;
-  color: var(--color-text);
+  color: var(--color-text-muted);
+}
+
+.boton-pag ion-icon {
+  font-size: 1rem;
+}
+
+body.theme-dark .boton-pag {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+/* Estilos específicos para filtros de la sección Admin */
+.admin-filter-container {
   display: flex;
-  align-items: center;
-  gap: 6px;
+  gap: 10px;
+  align-items: flex-end;
+  margin-bottom: 16px;
 }
 
-.filtros-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.filtro-item {
+.admin-filter-date {
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-.filtro-item label {
+.admin-filter-date label {
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--color-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.02em;
 }
 
-.filtro-item input,
-.filtro-item select {
-  height: 42px;
-  border: 1px solid var(--color-border);
+.admin-filter-date input[type="date"] {
+  width: 100%;
+  height: 38px;
+  padding: 8px 12px;
   border-radius: var(--radius-md);
-  padding: 0 12px;
+  border: 1px solid var(--color-border);
   background: var(--color-surface);
   color: var(--color-text);
   font-size: 0.9rem;
-  outline: none;
+  font-family: inherit;
 }
 
-.filtro-item input:focus,
-.filtro-item select:focus {
-  border-color: var(--color-primary);
-}
-
-.filtros-acciones {
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
-}
-
-.filtros-acciones .boton-secundario,
-.filtros-acciones .boton-principal {
-  height: 40px;
-  min-height: 40px;
-  padding: 0 14px;
-  font-size: 0.85rem;
-  width: auto;
-}
-
-/* ==========================================================================
-   TARJETA DE INCONSISTENCIAS AGRUPADAS (1 PERSONA = 1 TARJETA)
-   ========================================================================== */
-.tarjeta-inconsistencia-agrupada {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: 16px;
-  margin-bottom: 14px;
-  box-shadow: var(--elevation-1);
-  transition: transform 150ms ease, box-shadow 150ms ease;
-}
-
-.tarjeta-inconsistencia-agrupada:hover {
-  box-shadow: var(--elevation-2);
-}
-
-.inconsistencia-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  border-bottom: 1px solid var(--color-border);
-  padding-bottom: 10px;
-  margin-bottom: 12px;
-  gap: 12px;
-}
-
-.inconsistencia-persona-info {
-  flex: 1;
-}
-
-.inconsistencia-persona-nombre {
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--color-text);
-}
-
-.inconsistencia-persona-doc {
-  font-size: 0.82rem;
-  color: var(--color-text-muted);
-  margin-top: 2px;
-}
-
-.inconsistencia-campos-lista {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.inconsistencia-campo-item {
+.admin-filter-btn {
+  height: 38px;
+  padding: 0 16px;
   background: var(--color-surface-variant);
-  border-radius: var(--radius-md);
-  padding: 10px 12px;
-  font-size: 0.85rem;
-  border-left: 3px solid var(--color-warning);
-}
-
-.inconsistencia-campo-item.resuelto {
-  border-left-color: var(--color-success);
-}
-
-.inconsistencia-campo-nombre {
-  font-weight: 700;
-  color: var(--color-primary);
-  margin-bottom: 4px;
-}
-
-.inconsistencia-comparativa {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-top: 4px;
-  font-size: 0.8rem;
-}
-
-.inconsistencia-val-actual {
-  color: var(--color-text-muted);
-}
-
-.inconsistencia-val-recibido {
-  color: var(--color-warning);
-  font-weight: 600;
-}
-
-.inconsistencia-meta {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.78rem;
-  color: var(--color-text-muted);
-  border-top: 1px dashed var(--color-border);
-  padding-top: 8px;
-  margin-top: 8px;
-  gap: 8px;
-}
-
-/* ==========================================================================
-   ESTADOS VACÍOS INTENCIONALES
-   ========================================================================== */
-.estado-vacio {
-  text-align: center;
-  padding: 48px 20px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
-.estado-vacio-icono {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  background: var(--color-primary-rgba);
-  color: var(--color-primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 32px;
-  margin-bottom: 16px;
-}
-
-.estado-vacio-icono.alerta {
-  background: var(--color-warning-bg);
-  color: var(--color-warning);
-}
-
-.estado-vacio-icono.exito {
-  background: var(--color-success-bg);
-  color: var(--color-success);
-}
-
-.estado-vacio-titulo {
-  font-size: 1.05rem;
-  font-weight: 700;
   color: var(--color-text);
-  margin-bottom: 6px;
-}
-
-.estado-vacio-desc {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   font-size: 0.85rem;
-  color: var(--color-text-muted);
-  max-width: 320px;
-  line-height: 1.4;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 150ms ease;
+  white-space: nowrap;
 }
 
-/* ==========================================================================
-   RESPONSIVE DESIGN (TABLET Y DESKTOP)
-   ========================================================================== */
-@media (min-width: 768px) {
-  .vistas-container {
-    max-width: 900px;
-    margin: 0 auto;
-    padding-top: 24px;
-  }
-
-  .filtros-grid {
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  }
-
-  .grilla-2x2 {
-    grid-template-columns: repeat(4, 1fr);
-  }
-
-  .modal-overlay {
-    align-items: center;
-  }
-
-  .modal-contenido {
-    border-radius: 24px;
-    max-height: 85vh;
-  }
-
-  .inconsistencia-comparativa {
-    font-size: 0.85rem;
-  }
+.admin-filter-btn:active {
+  background: var(--color-border);
+  transform: scale(0.97);
 }
 
-@media (min-width: 1024px) {
-  .vistas-container {
-    max-width: 1100px;
-  }
-
-  .filtros-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
+body.theme-dark .admin-filter-btn {
+  background: var(--color-surface-variant);
+  color: var(--color-text);
+  border-color: var(--color-border);
 }

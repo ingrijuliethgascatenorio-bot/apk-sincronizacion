@@ -107,7 +107,11 @@ class SqliteService {
         fecha_fin TEXT NOT NULL,
         estado TEXT NOT NULL,
         cantidad_registros INTEGER DEFAULT 0,
-        mensaje TEXT
+        mensaje TEXT,
+        registros_nuevos INTEGER DEFAULT 0,
+        registros_actualizados INTEGER DEFAULT 0,
+        registros_error INTEGER DEFAULT 0,
+        registros_conflictos INTEGER DEFAULT 0
       );
     `;
 
@@ -139,6 +143,24 @@ class SqliteService {
 
       for (const col of columnasNuevas) {
         if (!nombresColumnas.includes(col.nombre)) {
+          await this.db.execute(col.ddl);
+          console.log(`[DB] Columna agregada por migración: ${col.nombre}`);
+        }
+      }
+
+      // Migración de SincronizacionLog: agrega el desglose (nuevos, actualizados,
+      // errores, inconsistencias) para instalaciones que ya tenían la tabla vieja
+      // sin estas columnas — necesario para el timeline de Historial.
+      const columnasLog = await this.db.query('PRAGMA table_info(SincronizacionLog);');
+      const nombresColumnasLog = (columnasLog.values || []).map(c => c.name);
+      const columnasLogNuevas = [
+        { nombre: 'registros_nuevos', ddl: 'ALTER TABLE SincronizacionLog ADD COLUMN registros_nuevos INTEGER DEFAULT 0;' },
+        { nombre: 'registros_actualizados', ddl: 'ALTER TABLE SincronizacionLog ADD COLUMN registros_actualizados INTEGER DEFAULT 0;' },
+        { nombre: 'registros_error', ddl: 'ALTER TABLE SincronizacionLog ADD COLUMN registros_error INTEGER DEFAULT 0;' },
+        { nombre: 'registros_conflictos', ddl: 'ALTER TABLE SincronizacionLog ADD COLUMN registros_conflictos INTEGER DEFAULT 0;' },
+      ];
+      for (const col of columnasLogNuevas) {
+        if (!nombresColumnasLog.includes(col.nombre)) {
           await this.db.execute(col.ddl);
           console.log(`[DB] Columna agregada por migración: ${col.nombre}`);
         }

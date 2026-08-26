@@ -1,8 +1,8 @@
 export const CONFIG = {
-  // IP de la PC en la red local Wi-Fi escuchando en el puerto 3001
+  // URL del Backend expuesto por túnel ngrok
   // El backend usa app.setGlobalPrefix('api'), por eso la URL termina en /api
-  API_URL: "https://saludata-api.julieth.site/api",
-  APP_NAME: "SGES Salud Nativo",
+  API_URL: "https://jumble-dumpster-consult.ngrok-free.dev/api",
+  APP_NAME: "SaluData",
   // OJO: sin extensión ".db" — el plugin @capacitor-community/sqlite la agrega
   // internamente. Ponerla aquí también puede causar que busque la conexión
   // con un nombre distinto al que realmente creó (síntoma: "CapacitorSQLitePlugin: null").

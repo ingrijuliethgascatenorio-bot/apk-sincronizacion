@@ -12,6 +12,10 @@ import { sqliteService } from './sqlite.service.js';
 import { apiService } from './api.service.js';
 
 class SyncService {
+  constructor() {
+    this.estaSincronizando = false;
+  }
+
   async obtenerPendientes() {
     return await sqliteService.query(
       "SELECT * FROM Persona WHERE estado_sincronizacion IN ('PENDING_INSERT', 'PENDING_UPDATE', 'ERROR')"
@@ -43,23 +47,32 @@ class SyncService {
       estado: p.estado_registro === 'INACTIVO' ? 'Inactivo' : 'Activo',
       estado_sincronizacion: p.estado_sincronizacion,
       fecha_actualizacion: p.fecha_actualizacion,
-      version_base: p.version_base !== undefined && p.version_base !== null ? Number(p.version_base) : 1,
+      version_base: p.version_base !== undefined && p.version_base !== null ? Number(p.version_base) : (p.version_persona ? Number(p.version_persona) : 1),
       version_persona: p.version_persona !== undefined && p.version_persona !== null ? Number(p.version_persona) : 1
     };
   }
 
   async sincronizar() {
-    const fechaInicio = new Date().toISOString();
-    const pendientes = await this.obtenerPendientes();
-
-    if (pendientes.length === 0) {
-      return { exito: true, mensaje: 'No hay registros pendientes por sincronizar.', procesados: 0 };
+    if (this.estaSincronizando) {
+      console.log('⏳ [SyncService] Sincronización en curso. Omitiendo llamada concurrente.');
+      return { exito: true, mensaje: 'Sincronización en curso.', procesados: 0 };
     }
 
+    this.estaSincronizando = true;
+    const fechaInicio = new Date().toISOString();
+
     try {
+      const pendientes = await this.obtenerPendientes();
+
+      if (pendientes.length === 0) {
+        return { exito: true, mensaje: 'No hay registros pendientes por sincronizar.', procesados: 0 };
+      }
+
       const payload = {
         registros: pendientes.map(p => this.mapearParaBackend(p))
       };
+
+      console.log('📦 [SyncService] Enviando payload a POST /api/sincronizacion:', payload);
 
       // Ruta real del backend: POST /sincronizacion (no "/sincronizaciones/lote")
       const respuesta = await apiService.post('/sincronizacion', payload);
@@ -99,15 +112,23 @@ class SyncService {
 
       const fechaFin = new Date().toISOString();
       const errores = respuesta?.errores || 0;
+      const nuevosCount = respuesta?.nuevos || 0;
+      const actualizadosCount = respuesta?.actualizados || 0;
+      // El backend no manda un contador aparte de conflictos: se cuenta
+      // a partir del detalle real de cada registro (accion === 'CONFLICTO').
+      const conflictosCount = detalles.filter(d => d.accion === 'CONFLICTO').length;
       const estadoLog = errores > 0 ? 'ERROR' : 'ÉXITO';
       const mensaje = errores > 0
         ? `Sincronización completada con ${errores} error(es) de ${pendientes.length} registros.`
         : `Se sincronizaron ${pendientes.length} registros exitosamente con PostgreSQL.`;
 
       await sqliteService.run(
-        `INSERT INTO SincronizacionLog (fecha_inicio, fecha_fin, estado, cantidad_registros, mensaje)
-         VALUES (?, ?, ?, ?, ?)`,
-        [fechaInicio, fechaFin, estadoLog, pendientes.length, mensaje]
+        `INSERT INTO SincronizacionLog
+           (fecha_inicio, fecha_fin, estado, cantidad_registros, mensaje,
+            registros_nuevos, registros_actualizados, registros_error, registros_conflictos)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [fechaInicio, fechaFin, estadoLog, pendientes.length, mensaje,
+         nuevosCount, actualizadosCount, errores, conflictosCount]
       );
       await sqliteService.guardarPersistencia();
 
@@ -118,13 +139,17 @@ class SyncService {
 
       const fechaFin = new Date().toISOString();
       await sqliteService.run(
-        `INSERT INTO SincronizacionLog (fecha_inicio, fecha_fin, estado, cantidad_registros, mensaje)
-         VALUES (?, ?, 'ERROR', ?, ?)`,
-        [fechaInicio, fechaFin, 0, error.message || 'Error de conexión']
+        `INSERT INTO SincronizacionLog
+           (fecha_inicio, fecha_fin, estado, cantidad_registros, mensaje,
+            registros_nuevos, registros_actualizados, registros_error, registros_conflictos)
+         VALUES (?, ?, 'ERROR', ?, ?, 0, 0, ?, 0)`,
+        [fechaInicio, fechaFin, 0, error.message || 'Error de conexión', 0]
       );
       await sqliteService.guardarPersistencia();
 
       throw error;
+    } finally {
+      this.estaSincronizando = false;
     }
   }
 

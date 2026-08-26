@@ -179,10 +179,19 @@
         </div>
 
         <!-- Filtros tipo pill -->
-        <div class="contenedor-filtros" style="margin-bottom: 20px;">
+        <div class="contenedor-filtros" style="margin-bottom: 12px;">
           <button class="boton-filtro activo" onclick="appHistorial.setFiltroHistorial('todos', this)">Todos</button>
           <button class="boton-filtro" onclick="appHistorial.setFiltroHistorial('completados', this)">Completados</button>
           <button class="boton-filtro" onclick="appHistorial.setFiltroHistorial('errores', this)">Con errores</button>
+        </div>
+
+        <!-- Filtro por fecha -->
+        <div style="display: flex; gap: 8px; align-items: end; margin: 0 16px 20px 16px;">
+          <div style="flex: 1;">
+            <label for="historial-filtro-fecha" style="font-size: 0.75rem; font-weight: 700; color: var(--color-text-muted); text-transform: uppercase;">Fecha</label>
+            <input type="date" id="historial-filtro-fecha" onchange="appHistorial.onCambiarFecha(event)" style="width: 100%; padding: 8px 10px; border-radius: var(--radius-md); border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text); font-size: 0.85rem;" />
+          </div>
+          <button class="boton-secundario" onclick="appHistorial.limpiarFecha()" style="min-height: 38px; padding: 8px 14px; border-radius: var(--radius-md); font-size: 0.85rem;">Limpiar</button>
         </div>
 
         <div class="timeline-contenedor" id="lista-historial-contenedor">
@@ -200,28 +209,34 @@
 
         <!-- Subvista A: Listado de Sincronizaciones (Visible por defecto) -->
         <div id="reporte-general-seccion">
-          <div class="filtros-panel" style="margin: 0 16px 20px 16px;">
-            <div class="filtros-panel-header">
-              <span class="filtros-panel-titulo"><ion-icon name="filter-outline"></ion-icon> Filtros de Búsqueda</span>
+          <div class="caja-buscador" style="margin: 0 16px 12px 16px;">
+            <ion-icon name="search"></ion-icon>
+            <input type="text" id="reportes-input-busqueda" placeholder="Buscar por usuario o ID (#10)..." oninput="appReportes.onBuscarInput(event)" />
+          </div>
+
+          <div style="margin: 0 16px 16px 16px; display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; align-items: end;">
+            <div>
+              <label for="reportes-filtro-estado" style="font-size: 0.75rem; font-weight: 700; color: var(--color-text-muted); text-transform: uppercase;">Estado</label>
+              <select id="reportes-filtro-estado" onchange="appReportes.onCambiarEstado(event)" style="width: 100%; padding: 8px 10px; border-radius: var(--radius-md); border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text); font-size: 0.85rem;">
+                <option value="TODOS">Todos</option>
+                <option value="COMPLETADO">Completadas</option>
+                <option value="ERROR">Con error</option>
+              </select>
             </div>
-            <div class="filtros-grid">
-              <div class="filtro-item">
-                <label for="reportes-input-busqueda">Buscar</label>
-                <input type="text" id="reportes-input-busqueda" placeholder="Buscar por usuario o ID..." oninput="appReportes.onBuscarInput(event)" />
-              </div>
-              <div class="filtro-item">
-                <label for="reportes-filtro-fecha">Filtrar por fecha</label>
-                <input type="date" id="reportes-filtro-fecha" onchange="appReportes.onCambiarFecha(event)" />
-              </div>
+            <div>
+              <label for="reportes-filtro-fecha-desde" style="font-size: 0.75rem; font-weight: 700; color: var(--color-text-muted); text-transform: uppercase;">Desde</label>
+              <input type="date" id="reportes-filtro-fecha-desde" onchange="appReportes.onCambiarFechaDesde(event)" style="width: 100%; padding: 8px 10px; border-radius: var(--radius-md); border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text); font-size: 0.85rem;" />
             </div>
-            <div class="filtros-acciones">
-              <button class="boton-secundario" onclick="appReportes.limpiarFiltros()">
-                <ion-icon name="refresh-outline"></ion-icon> Limpiar
-              </button>
+            <div>
+              <label for="reportes-filtro-fecha-hasta" style="font-size: 0.75rem; font-weight: 700; color: var(--color-text-muted); text-transform: uppercase;">Hasta</label>
+              <input type="date" id="reportes-filtro-fecha-hasta" onchange="appReportes.onCambiarFechaHasta(event)" style="width: 100%; padding: 8px 10px; border-radius: var(--radius-md); border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text); font-size: 0.85rem;" />
+            </div>
+            <div>
+              <button class="boton-secundario" onclick="appReportes.limpiarFiltros()" style="width: 100%; min-height: 38px; border-radius: var(--radius-md); font-size: 0.85rem;">Limpiar</button>
             </div>
           </div>
 
-          <h3 style="margin: 0 16px 12px 16px; font-weight: 800;">Tus sincronizaciones realizadas</h3>
+          <h3 style="margin: 0 16px 12px 16px; font-weight: 800; font-size: 1.1rem; color: var(--color-text);">Tus sincronizaciones realizadas</h3>
           <div id="lista-reportes-sincronizaciones" style="padding: 0 16px;">
             <!-- Inyectado dinámicamente -->
           </div>
@@ -338,7 +353,7 @@
         </div>
 
         <div id="lista-conflictos-contenedor" style="padding: 0 16px 20px 16px;">
-          <!-- Aquí se inyectan dinámicamente las inconsistencias agrupadas por persona -->
+          <!-- Aquí se inyectan dinámicamente las inconsistencias -->
         </div>
         <div id="paginacion-conflictos" class="paginacion-contenedor" style="padding: 0 16px 80px 16px;"></div>
       </section>
@@ -350,26 +365,18 @@
           <p>Historial de cambios aplicados a las personas registradas</p>
         </div>
 
-        <div class="filtros-panel" style="margin: 0 16px 20px 16px;">
-          <div class="filtros-panel-header">
-            <span class="filtros-panel-titulo"><ion-icon name="filter-outline"></ion-icon> Filtros de Auditoría</span>
+        <div class="caja-buscador" style="margin: 0 16px 12px 16px;">
+          <ion-icon name="search"></ion-icon>
+          <input type="text" id="admin-auditoria-busqueda" placeholder="Buscar por documento..." oninput="appAdmin.onBuscarAuditoria(event)" />
+        </div>
+
+        <div class="admin-filter-container" style="margin: 0 16px 16px 16px;">
+          <div class="admin-filter-date">
+            <label for="admin-auditoria-fecha">Filtrar por fecha</label>
+            <input type="date" id="admin-auditoria-fecha" onchange="appAdmin.onCambiarFechaAuditoria(event)" />
           </div>
-          <div class="filtros-grid">
-            <div class="filtro-item">
-              <label for="admin-auditoria-busqueda">Documento</label>
-              <input type="text" id="admin-auditoria-busqueda" placeholder="Buscar por documento..." oninput="appAdmin.onBuscarAuditoria(event)" />
-            </div>
-            <div class="filtro-item">
-              <label for="admin-auditoria-fecha">Filtrar por fecha</label>
-              <input type="date" id="admin-auditoria-fecha" onchange="appAdmin.onCambiarFechaAuditoria(event)" />
-            </div>
-          </div>
-          <div class="filtros-acciones">
-            <button class="boton-secundario" onclick="appAdmin.filtrarHoyAuditoria()">Hoy</button>
-            <button class="boton-secundario" onclick="appAdmin.limpiarFiltrosAuditoria()">
-              <ion-icon name="refresh-outline"></ion-icon> Limpiar
-            </button>
-          </div>
+          <button class="admin-filter-btn" onclick="appAdmin.filtrarHoyAuditoria()">Hoy</button>
+          <button class="admin-filter-btn" onclick="appAdmin.limpiarFiltrosAuditoria()">Limpiar</button>
         </div>
 
         <div id="lista-auditoria-contenedor" style="padding: 0 16px 20px 16px;">
@@ -386,36 +393,39 @@
         </div>
 
         <div style="padding: 0 16px 20px 16px;">
-          <div class="tarjeta-blanca" style="margin-bottom: 20px;">
-            <h3>Resumen General de Datos</h3>
-            <div id="admin-reporte-general" style="margin-top: 12px;">
-              <!-- Resumen dinámico -->
+          <!-- 3 tarjetas métricas de sincronización -->
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px;">
+            <div class="tarjeta-metrica">
+              <div class="icono-circulo morado"><ion-icon name="sync-circle"></ion-icon></div>
+              <div class="valor-metrica" id="admin-metric-lotes">0</div>
+              <div class="etiqueta-metrica">Lotes de Sincronización</div>
+            </div>
+            <div class="tarjeta-metrica">
+              <div class="icono-circulo verde"><ion-icon name="person-add"></ion-icon></div>
+              <div class="valor-metrica" id="admin-metric-nuevos">0</div>
+              <div class="etiqueta-metrica">Nuevos</div>
+            </div>
+            <div class="tarjeta-metrica">
+              <div class="icono-circulo naranja"><ion-icon name="create"></ion-icon></div>
+              <div class="valor-metrica" id="admin-metric-actualizados">0</div>
+              <div class="etiqueta-metrica">Actualizados</div>
             </div>
           </div>
 
           <!-- Estructura idéntica al flujo de reportes para poder ver las sincronizaciones centralizadas -->
           <div id="admin-reportes-lotes-seccion">
-            <div class="filtros-panel" style="margin-bottom: 20px;">
-              <div class="filtros-panel-header">
-                <span class="filtros-panel-titulo"><ion-icon name="filter-outline"></ion-icon> Filtros de Lotes y Sincronizaciones</span>
-              </div>
-              <div class="filtros-grid">
-                <div class="filtro-item">
-                  <label for="admin-reportes-busqueda">Buscar</label>
-                  <input type="text" id="admin-reportes-busqueda" placeholder="Buscar por encuestador o ID..." oninput="appAdminReportes.onBuscarInput(event)" />
-                </div>
-                <div class="filtro-item">
-                  <label for="admin-reportes-fecha">Filtrar por fecha</label>
-                  <input type="date" id="admin-reportes-fecha" onchange="appAdminReportes.onCambiarFecha(event)" />
-                </div>
-              </div>
-              <div class="filtros-acciones">
-                <button class="boton-secundario" onclick="appAdminReportes.limpiarFiltros()">
-                  <ion-icon name="refresh-outline"></ion-icon> Limpiar
-                </button>
-              </div>
+            <h3 style="margin-bottom: 12px; font-weight: 800;">Lotes y Sincronizaciones</h3>
+            <div class="caja-buscador" style="margin-bottom: 12px;">
+              <ion-icon name="search"></ion-icon>
+              <input type="text" id="admin-reportes-busqueda" placeholder="Buscar por encuestador o ID..." oninput="appAdminReportes.onBuscarInput(event)" />
             </div>
-
+            <div class="admin-filter-container">
+              <div class="admin-filter-date">
+                <label for="admin-reportes-fecha">Filtrar por fecha</label>
+                <input type="date" id="admin-reportes-fecha" onchange="appAdminReportes.onCambiarFecha(event)" />
+              </div>
+              <button class="admin-filter-btn" onclick="appAdminReportes.limpiarFiltros()">Limpiar</button>
+            </div>
             <div id="admin-lista-reportes-sincronizaciones">
               <!-- Inyectado dinámicamente -->
             </div>
@@ -477,32 +487,32 @@
     <!-- BARRA DE NAVEGACIÓN INFERIOR (TABS) -->
     <nav class="barra-navegacion" id="barra-navegacion">
       <button class="boton-tab activo" data-tab="inicio" onclick="appNavegacion.irA('inicio')">
-        <span class="icono-tab"><ion-icon name="home-outline"></ion-icon></span>
+        <span class="icono-tab"><ion-icon name="home"></ion-icon></span>
         <span>Inicio</span>
       </button>
 
       <button class="boton-tab" data-tab="personas" onclick="appNavegacion.irA('personas')">
-        <span class="icono-tab"><ion-icon name="people-outline"></ion-icon></span>
+        <span class="icono-tab"><ion-icon name="people"></ion-icon></span>
         <span>Personas</span>
       </button>
 
       <button class="boton-tab" data-tab="sincronizar" onclick="appNavegacion.irA('sincronizar')">
-        <span class="icono-tab"><ion-icon name="sync-outline"></ion-icon></span>
+        <span class="icono-tab"><ion-icon name="sync"></ion-icon></span>
         <span>Sincronizar</span>
       </button>
 
       <button class="boton-tab" data-tab="historial" onclick="appNavegacion.irA('historial')">
-        <span class="icono-tab"><ion-icon name="time-outline"></ion-icon></span>
+        <span class="icono-tab"><ion-icon name="time"></ion-icon></span>
         <span>Historial</span>
       </button>
 
       <button class="boton-tab" data-tab="reportes" onclick="appNavegacion.irA('reportes')">
-        <span class="icono-tab"><ion-icon name="bar-chart-outline"></ion-icon></span>
+        <span class="icono-tab"><ion-icon name="bar-chart"></ion-icon></span>
         <span>Reportes</span>
       </button>
 
       <button class="boton-tab" data-tab="perfil" onclick="appNavegacion.irA('perfil')">
-        <span class="icono-tab"><ion-icon name="person-circle-outline"></ion-icon></span>
+        <span class="icono-tab"><ion-icon name="person-circle"></ion-icon></span>
         <span>Perfil</span>
       </button>
     </nav>
@@ -510,27 +520,27 @@
     <!-- BARRA DE NAVEGACIÓN INFERIOR PARA ADMINISTRADOR (TABS) -->
     <nav class="barra-navegacion" id="barra-navegacion-admin" style="display: none;">
       <button class="boton-tab activo" data-tab="admin-inicio" onclick="appNavegacion.irA('admin-inicio')">
-        <span class="icono-tab"><ion-icon name="speedometer-outline"></ion-icon></span>
+        <span class="icono-tab"><ion-icon name="speedometer"></ion-icon></span>
         <span>Inicio</span>
       </button>
 
       <button class="boton-tab" data-tab="admin-inconsistencias" onclick="appNavegacion.irA('admin-inconsistencias')">
-        <span class="icono-tab"><ion-icon name="warning-outline"></ion-icon></span>
+        <span class="icono-tab"><ion-icon name="alert-circle"></ion-icon></span>
         <span>Inconsistencias</span>
       </button>
 
       <button class="boton-tab" data-tab="admin-auditoria" onclick="appNavegacion.irA('admin-auditoria')">
-        <span class="icono-tab"><ion-icon name="shield-checkmark-outline"></ion-icon></span>
+        <span class="icono-tab"><ion-icon name="eye"></ion-icon></span>
         <span>Auditoría</span>
       </button>
 
       <button class="boton-tab" data-tab="admin-reportes" onclick="appNavegacion.irA('admin-reportes')">
-        <span class="icono-tab"><ion-icon name="bar-chart-outline"></ion-icon></span>
+        <span class="icono-tab"><ion-icon name="pie-chart"></ion-icon></span>
         <span>Reportes</span>
       </button>
 
       <button class="boton-tab" data-tab="admin-perfil" onclick="appNavegacion.irA('admin-perfil')">
-        <span class="icono-tab"><ion-icon name="person-circle-outline"></ion-icon></span>
+        <span class="icono-tab"><ion-icon name="person-circle"></ion-icon></span>
         <span>Perfil</span>
       </button>
     </nav>

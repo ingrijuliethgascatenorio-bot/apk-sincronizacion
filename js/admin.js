@@ -7,6 +7,7 @@
 
 import { apiService } from './api.service.js';
 import { authService } from './auth.service.js';
+import { reportesService } from './reportes.service.js';
 import { renderizarPaginador, etiquetaCampoConflicto } from './ui.utils.js';
 
 class AdminController {
@@ -73,16 +74,14 @@ class AdminController {
   }
 
   /**
-   * Carga la bandeja de Inconsistencias (conflictos de sincronización agrupados por persona)
+   * Carga la bandeja de Inconsistencias (conflictos de sincronización)
    */
   async cargarAdminInconsistencias() {
     const contenedor = document.getElementById('lista-conflictos-contenedor');
     if (!contenedor) return;
     contenedor.innerHTML = `
-      <div class="estado-vacio">
-        <div class="estado-vacio-icono"><ion-icon name="sync-outline" style="animation: spin 1s infinite linear;"></ion-icon></div>
-        <div class="estado-vacio-titulo">Cargando inconsistencias...</div>
-        <div class="estado-vacio-desc">Consultando registros pendientes con el servidor.</div>
+      <div style="text-align: center; padding: 24px 16px; color: var(--color-text-muted);">
+        Cargando inconsistencias...
       </div>
     `;
 
@@ -92,10 +91,10 @@ class AdminController {
     } catch (e) {
       console.error('Error al cargar inconsistencias:', e);
       contenedor.innerHTML = `
-        <div class="estado-vacio">
-          <div class="estado-vacio-icono alerta"><ion-icon name="alert-circle-outline"></ion-icon></div>
-          <div class="estado-vacio-titulo">No se pudieron cargar las inconsistencias</div>
-          <div class="estado-vacio-desc">${e.message || 'Error de conexión con el servidor.'}</div>
+        <div style="text-align: center; padding: 24px 16px; color: var(--color-danger);">
+          <ion-icon name="alert-circle-outline" style="font-size: 32px;"></ion-icon>
+          <p style="margin-top: 8px;">No se pudieron cargar las inconsistencias.</p>
+          <p style="font-size: 0.8rem; color: var(--color-text-muted);">${e.message || 'Error de conexión con el servidor.'}</p>
         </div>
       `;
       return;
@@ -110,27 +109,8 @@ class AdminController {
         lista = lista.filter(c => c.persona_documento.toLowerCase().includes(termino));
       }
 
-      // AGRUPAR POR PERSONA (1 PERSONA = 1 TARJETA)
-      const agrupadosMap = new Map();
-      lista.forEach(c => {
-        const doc = c.persona_documento;
-        if (!agrupadosMap.has(doc)) {
-          agrupadosMap.set(doc, {
-            persona_documento: doc,
-            persona_nombre: c.persona_nombre || '',
-            encuestador_nombre: c.encuestador_nombre || 'No disponible',
-            origen: c.origen || 'OFFLINE',
-            fecha_creacion: c.fecha_creacion,
-            estado: c.estado,
-            conflictos: []
-          });
-        }
-        agrupadosMap.get(doc).conflictos.push(c);
-      });
-
-      const grupos = Array.from(agrupadosMap.values());
-      const totalItems = grupos.length;
-      const itemsPorPagina = 10;
+      const totalItems = lista.length;
+      const itemsPorPagina = 20;
       const totalPaginas = Math.ceil(totalItems / itemsPorPagina);
       if (this.paginaConflictos > totalPaginas) {
         this.paginaConflictos = Math.max(1, totalPaginas);
@@ -138,10 +118,9 @@ class AdminController {
 
       if (totalItems === 0) {
         contenedor.innerHTML = `
-          <div class="estado-vacio">
-            <div class="estado-vacio-icono exito"><ion-icon name="checkmark-circle-outline"></ion-icon></div>
-            <div class="estado-vacio-titulo">No hay inconsistencias en este estado</div>
-            <div class="estado-vacio-desc">Todos los registros sincronizados se encuentran en orden.</div>
+          <div style="text-align: center; padding: 40px 16px; color: var(--color-text-muted);">
+            <div style="font-size: 32px; margin-bottom: 8px;"><ion-icon name="checkmark-circle" style="font-size: 48px; color: var(--color-success);"></ion-icon></div>
+            <p>No se encontraron inconsistencias en este estado.</p>
           </div>
         `;
         renderizarPaginador(0, itemsPorPagina, 1, 'paginacion-conflictos', () => {});
@@ -149,71 +128,49 @@ class AdminController {
       }
 
       const offset = (this.paginaConflictos - 1) * itemsPorPagina;
-      const gruposAPresentar = grupos.slice(offset, offset + itemsPorPagina);
+      const itemsAPresentar = lista.slice(offset, offset + itemsPorPagina);
 
-      gruposAPresentar.forEach(grupo => {
-        const numConflictos = grupo.conflictos.length;
-        const tarjeta = document.createElement('div');
-        tarjeta.className = 'tarjeta-inconsistencia-agrupada';
+      itemsAPresentar.forEach(c => {
+        const item = document.createElement('div');
+        item.className = 'tarjeta-persona';
+        item.style.flexDirection = 'column';
+        item.style.alignItems = 'stretch';
+        item.style.gap = '8px';
+        item.style.padding = '16px';
+        item.style.marginBottom = '12px';
 
-        const badgeClass = grupo.estado === 'PENDIENTE' ? 'pendiente' : 'sincronizado';
-        const badgeText = grupo.estado === 'PENDIENTE'
-          ? `${numConflictos} ${numConflictos === 1 ? 'inconsistencia' : 'inconsistencias'}`
-          : `${numConflictos} ${numConflictos === 1 ? 'resuelta' : 'resueltas'}`;
+        const badgeClass = c.estado === 'PENDIENTE' ? 'pendiente' : 'sincronizado';
+        const badgeText = c.estado === 'PENDIENTE' ? 'PENDIENTE' : 'RESUELTO';
 
-        let camposHtml = '';
-        grupo.conflictos.forEach(c => {
-          camposHtml += `
-            <div class="inconsistencia-campo-item ${c.estado === 'RESUELTO' ? 'resuelto' : ''}">
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span class="inconsistencia-campo-nombre">${etiquetaCampoConflicto(c.campo)}</span>
-                ${c.estado === 'PENDIENTE' ? `
-                  <button class="boton-principal" style="height: 32px; min-height: 32px; padding: 0 12px; font-size: 0.78rem; width: auto;" onclick="appAdmin.abrirModalConflicto(${c.id})">
-                    <ion-icon name="options-outline"></ion-icon> Resolver
-                  </button>
-                ` : ''}
-              </div>
-              <div class="inconsistencia-comparativa">
-                <div class="inconsistencia-val-actual">
-                  <span style="font-size: 0.72rem; text-transform: uppercase; display: block; opacity: 0.8;">Dato Oficial:</span>
-                  <strong>${c.valor_actual || '(Vacío)'}</strong>
-                </div>
-                <div class="inconsistencia-val-recibido">
-                  <span style="font-size: 0.72rem; text-transform: uppercase; display: block; opacity: 0.8;">Dato Recibido:</span>
-                  <strong>${c.valor_recibido || '(Vacío)'}</strong>
-                </div>
-              </div>
-              ${c.estado === 'RESUELTO' ? `
-                <div style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--color-border); font-size: 0.8rem;">
-                  <strong>Decisión:</strong> ${c.decision} (${c.valor_resuelto})
-                  <div style="color: var(--color-text-muted); font-style: italic;">"${c.motivo}"</div>
-                </div>
-              ` : ''}
-            </div>
-          `;
-        });
-
-        const fechaStr = new Date(grupo.fecha_creacion).toLocaleString('es-CO');
-
-        tarjeta.innerHTML = `
-          <div class="inconsistencia-header">
-            <div class="inconsistencia-persona-info">
-              <div class="inconsistencia-persona-nombre">Documento: ${grupo.persona_documento}</div>
-              ${grupo.persona_nombre ? `<div class="inconsistencia-persona-doc">${grupo.persona_nombre}</div>` : ''}
+        item.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+              <div class="persona-nombre">Doc: ${c.persona_documento}</div>
+              <div class="persona-sub">Campo: <strong style="color: var(--color-primary);">${etiquetaCampoConflicto(c.campo)}</strong></div>
             </div>
             <span class="insignia ${badgeClass}">${badgeText}</span>
           </div>
-
-          <div class="inconsistencia-campos-lista">
-            ${camposHtml}
+          <div style="margin-top: 6px; font-size: 0.85rem; color: var(--color-text-muted);">
+            <div><strong>Actual:</strong> ${c.valor_actual}</div>
+            <div style="color: var(--color-warning); font-weight: 600;"><strong>Recibido:</strong> ${c.valor_recibido}</div>
+            <div style="margin-top: 4px; font-size: 0.8rem;">
+              Enviado por: ${c.encuestador_nombre} (${c.origen}) · ${new Date(c.fecha_creacion).toLocaleString('es-CO')}
+            </div>
           </div>
-
-          <div class="inconsistencia-meta">
-            <div><strong>Encuestador:</strong> ${grupo.encuestador_nombre} (${grupo.origen})</div>
-            <div><strong>Fecha:</strong> ${fechaStr}</div>
-          </div>
+          ${c.estado === 'PENDIENTE' ? `
+            <div style="margin-top: 10px; display: flex; justify-content: flex-end;">
+              <button class="boton-principal" style="padding: 6px 12px; font-size: 0.85rem;" onclick="appAdmin.abrirModalConflicto(${c.id})">
+                <ion-icon name="eye"></ion-icon> Revisar
+              </button>
+            </div>
+          ` : `
+            <div style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--color-border); font-size: 0.85rem;">
+              <strong>Resolución:</strong> ${c.decision} (${c.valor_resuelto})
+              <div style="font-size: 0.8rem; color: var(--color-text-muted); font-style: italic;">"${c.motivo}"</div>
+            </div>
+          `}
         `;
-        contenedor.appendChild(tarjeta);
+        contenedor.appendChild(item);
       });
 
       renderizarPaginador(totalItems, itemsPorPagina, this.paginaConflictos, 'paginacion-conflictos', (nuevaPag) => {
@@ -223,7 +180,7 @@ class AdminController {
         if (listCont) listCont.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       });
     } catch (e) {
-      console.error('Error al renderizar inconsistencias:', e);
+      console.error('Error al cargar inconsistencias:', e);
     }
   }
 
@@ -274,10 +231,8 @@ class AdminController {
 
       if (totalItems === 0) {
         contenedor.innerHTML = `
-          <div class="estado-vacio">
-            <div class="estado-vacio-icono"><ion-icon name="shield-checkmark-outline"></ion-icon></div>
-            <div class="estado-vacio-titulo">Sin registros de auditoría</div>
-            <div class="estado-vacio-desc">No se encontraron resoluciones de conflictos para los filtros seleccionados.</div>
+          <div style="text-align: center; padding: 40px 16px; color: var(--color-text-muted);">
+            <p>No se registran auditorías de resolución de conflictos aún.</p>
           </div>
         `;
         renderizarPaginador(0, itemsPorPagina, 1, 'paginacion-auditoria', () => {});
@@ -352,33 +307,32 @@ class AdminController {
   }
 
   /**
-   * Carga el resumen de reportes de conflictos
+   * Carga las métricas globales de sincronización para las 3 tarjetas superiores
+   * de Reportes Admin (Lotes, Nuevos, Actualizados) y dispara la carga de la
+   * lista de sincronizaciones.
    */
   async cargarAdminReportes() {
     try {
       const metricas = await this.ejecutarFetch('/admin/conflictos/metricas');
-      const div = document.getElementById('admin-reporte-general');
-      div.innerHTML = `
-        <div style="display:flex; justify-content: space-between; margin-bottom: 8px;">
-          <span>Conflictos Totales Detectados:</span>
-          <strong>${metricas.pendientes + metricas.resueltos}</strong>
-        </div>
-        <div style="display:flex; justify-content: space-between; margin-bottom: 8px;">
-          <span>Conflictos Pendientes:</span>
-          <strong style="color: var(--color-warning);">${metricas.pendientes}</strong>
-        </div>
-        <div style="display:flex; justify-content: space-between; margin-bottom: 8px;">
-          <span>Conflictos Resueltos:</span>
-          <strong style="color: var(--color-success);">${metricas.resueltos}</strong>
-        </div>
-        <div style="display:flex; justify-content: space-between;">
-          <span>Tasa de Resolución:</span>
-          <strong>${metricas.pendientes + metricas.resueltos > 0 ? Math.round((metricas.resueltos / (metricas.pendientes + metricas.resueltos)) * 100) : 100}%</strong>
-        </div>
-      `;
+
+      // Poblar las 3 tarjetas superiores con datos reales
+      const elLotes = document.getElementById('admin-metric-lotes');
+      const elNuevos = document.getElementById('admin-metric-nuevos');
+      const elActualizados = document.getElementById('admin-metric-actualizados');
+
+      if (elLotes) elLotes.textContent = metricas.syncs;
+      if (elNuevos) elNuevos.textContent = metricas.totalNuevos;
+      if (elActualizados) elActualizados.textContent = metricas.totalActualizados;
     } catch (e) {
-      console.error('Error al cargar reportes admin:', e);
+      console.error('Error al cargar métricas de reportes admin:', e);
     }
+
+    // Cargar la lista de sincronizaciones (asegurando que el detalle esté oculto)
+    const listSec = document.getElementById('admin-reportes-lotes-seccion');
+    const detSec = document.getElementById('admin-reporte-detalle-seccion');
+    if (listSec) listSec.style.display = 'block';
+    if (detSec) detSec.style.display = 'none';
+    await adminReportesController.cargarReportes();
   }
 
   cargarAdminPerfil() {
@@ -413,7 +367,7 @@ class AdminController {
       document.getElementById('resolucion-conf-id').value = data.conflicto.id;
       document.getElementById('conf-persona-nombre').textContent = `${data.persona?.nombres || 'Cargando...'} ${data.persona?.apellidos || ''}`;
       document.getElementById('conf-persona-doc').textContent = `Documento: ${data.conflicto.persona_documento}`;
-      document.getElementById('conf-campo-nombre').textContent = data.conflicto.campo;
+      document.getElementById('conf-campo-nombre').textContent = etiquetaCampoConflicto(data.conflicto.campo);
       document.getElementById('conf-dato-oficial').textContent = data.conflicto.valor_actual || '(Vacío)';
       document.getElementById('conf-dato-recibido').textContent = data.conflicto.valor_recibido || '(Vacío)';
       document.getElementById('conf-info-encuestador').textContent = data.conflicto.encuestador_nombre || 'N/A';
@@ -487,7 +441,7 @@ class AdminReportesController {
     const contenedor = document.getElementById('admin-lista-reportes-sincronizaciones');
     if (!contenedor) return;
 
-    contenedor.innerHTML = '<div style="text-align: center; padding: 12px; color: var(--color-text-muted);">Cargando sincronizaciones...</div>';
+    contenedor.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--color-text-muted);">Cargando sincronizaciones...</div>';
 
     try {
       const response = await adminController.ejecutarFetch(`/historial/sincronizaciones?pagina=${this.paginaReportes}&limite=10`);
@@ -495,7 +449,7 @@ class AdminReportesController {
 
       let lista = response.datos || [];
 
-      // Aplicar filtros
+      // Aplicar filtros locales de búsqueda y fecha
       if (this.terminoBusqueda) {
         lista = lista.filter(item => 
           String(item.id).includes(this.terminoBusqueda) || 
@@ -511,13 +465,7 @@ class AdminReportesController {
       }
 
       if (lista.length === 0) {
-        contenedor.innerHTML = `
-          <div class="estado-vacio">
-            <div class="estado-vacio-icono"><ion-icon name="bar-chart-outline"></ion-icon></div>
-            <div class="estado-vacio-titulo">No se encontraron sincronizaciones</div>
-            <div class="estado-vacio-desc">No hay registros de sincronización que coincidan con la búsqueda.</div>
-          </div>
-        `;
+        contenedor.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--color-text-muted); font-size: 0.9rem;">No se encontraron sincronizaciones.</div>';
         renderizarPaginador(0, 10, 1, 'admin-paginacion-reportes-sync', () => {});
         return;
       }
@@ -526,24 +474,35 @@ class AdminReportesController {
         const tarjeta = document.createElement('div');
         tarjeta.className = 'tarjeta-blanca';
         tarjeta.style.marginBottom = '12px';
-        tarjeta.style.padding = '14px';
-        tarjeta.style.cursor = 'pointer';
-        tarjeta.onclick = () => this.abrirDetalle(s.id);
+        tarjeta.style.padding = '14px 16px';
+        tarjeta.style.borderRadius = 'var(--radius-lg)';
 
         const fechaStr = new Date(s.fecha_inicio).toLocaleString('es-CO');
-        const estadoClass = s.estado === 'COMPLETADO' ? 'sincronizado' : 'error';
+        const esError = s.estado === 'ERROR' || (s.registros_error && s.registros_error > 0);
+        const estadoLabel = esError ? 'ERROR' : (s.estado === 'COMPLETADO' ? 'COMPLETADA' : s.estado);
+        const estadoClass = esError ? 'error' : 'completamente-exitosa';
 
         tarjeta.innerHTML = `
-          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--color-border); padding-bottom: 6px; margin-bottom: 8px;">
-            <strong style="color: var(--color-primary);">Sincronización #${s.id}</strong>
-            <span class="insignia ${estadoClass}">${s.estado}</span>
+          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--color-border); padding-bottom: 8px; margin-bottom: 10px;">
+            <strong style="color: var(--color-primary); font-size: 1.05rem;">Sincronización #${s.id}</strong>
+            <span class="insignia ${estadoClass}">${estadoLabel}</span>
           </div>
-          <div style="font-size: 0.85rem; color: var(--color-text-muted);">
+          <div style="font-size: 0.88rem; color: var(--color-text-muted); line-height: 1.5;">
             <div><strong>Fecha:</strong> ${fechaStr}</div>
-            <div><strong>Encuestador:</strong> ${s.nombre_usuario || 'N/A'}</div>
+            <div><strong>Origen:</strong> ONLINE</div>
+            <div><strong>Realizado por:</strong> ${s.nombre_usuario || 'Encuestador'}</div>
+            <div><strong>Procesados:</strong> ${s.cantidad_registros || 0} registros</div>
             <div style="margin-top: 4px; font-weight: 600; color: var(--color-text);">
-              Nuevos: ${s.registros_nuevos} · Actualizados: ${s.registros_actualizados} · Errores: ${s.registros_error}
+              Detalle: ${s.registros_nuevos || 0} nuevos · ${s.registros_actualizados || 0} actualizados · ${s.registros_error || 0} errores
             </div>
+          </div>
+          <div style="display: flex; gap: 8px; margin-top: 12px; border-top: 1px dashed var(--color-border); padding-top: 10px;">
+            <button class="boton-secundario" style="flex: 1; padding: 6px 12px; font-size: 0.85rem; min-height: 36px; border-radius: var(--radius-md);" onclick="appAdminReportes.abrirDetalle(${s.id})">
+              Ver detalles
+            </button>
+            <button class="boton-principal" style="flex: 1; padding: 6px 12px; font-size: 0.85rem; min-height: 36px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; gap: 4px;" onclick="appAdminReportes.descargarReporte(${s.id}, 'pdf')">
+              <ion-icon name="document-text-outline"></ion-icon> PDF
+            </button>
           </div>
         `;
         contenedor.appendChild(tarjeta);
@@ -556,7 +515,7 @@ class AdminReportesController {
 
     } catch (e) {
       console.error('Error al cargar sincronizaciones en admin:', e);
-      contenedor.innerHTML = '<div style="text-align: center; padding: 12px; color: var(--color-danger);">Error de carga.</div>';
+      contenedor.innerHTML = `<div style="text-align: center; padding: 16px; color: var(--color-danger); font-size: 0.9rem;">${e.message || 'Error al cargar sincronizaciones.'}</div>`;
     }
   }
 
@@ -573,12 +532,34 @@ class AdminReportesController {
   }
 
   limpiarFiltros() {
-    document.getElementById('admin-reportes-busqueda').value = '';
-    document.getElementById('admin-reportes-fecha').value = '';
+    const inputBusqueda = document.getElementById('admin-reportes-busqueda');
+    const inputFecha = document.getElementById('admin-reportes-fecha');
+    if (inputBusqueda) inputBusqueda.value = '';
+    if (inputFecha) inputFecha.value = '';
     this.terminoBusqueda = '';
     this.filtroFecha = '';
     this.paginaReportes = 1;
     this.cargarReportes();
+  }
+
+  _etiquetaCampo(campo) {
+    const ETIQUETAS = {
+      nombres: 'Nombre',
+      apellidos: 'Apellido',
+      fecha_nacimiento: 'Fecha de nacimiento',
+      genero: 'Género',
+      direccion: 'Dirección',
+      barrio: 'Barrio',
+      estrato: 'Estrato',
+      correo: 'Correo',
+      estado_civil: 'Estado civil',
+      id_eps: 'EPS',
+      eps_otro_nombre: 'EPS (otro)',
+      telefono1: 'Teléfono 1',
+      telefono2: 'Teléfono 2',
+      telefono3: 'Teléfono 3',
+    };
+    return ETIQUETAS[campo] || campo;
   }
 
   async abrirDetalle(id) {
@@ -586,63 +567,224 @@ class AdminReportesController {
     const detSec = document.getElementById('admin-reporte-detalle-seccion');
     const detCont = document.getElementById('admin-reporte-detalle-contenido');
 
+    if (!listSec || !detSec || !detCont) return;
+
     listSec.style.display = 'none';
     detSec.style.display = 'block';
-    detCont.innerHTML = '<div style="text-align: center; padding: 12px;">Cargando detalles de sincronización...</div>';
+    detCont.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--color-text-muted);">Cargando detalles de sincronización...</div>';
 
     try {
       const data = await adminController.ejecutarFetch(`/historial/sincronizaciones/${id}`);
       const s = data.sincronizacion;
       const cambios = data.cambios || [];
 
-      let cambiosHtml = '';
-      if (cambios.length === 0) {
-        cambiosHtml = '<p style="font-size: 0.9rem; color: var(--color-text-muted); font-style: italic;">Sin cambios detallados en esta sincronización.</p>';
-      } else {
-        cambios.forEach(c => {
-          cambiosHtml += `
-            <div class="tarjeta-persona" style="flex-direction: column; align-items: stretch; gap: 4px; padding: 10px; margin-bottom: 8px;">
-              <div style="font-weight: 700; font-size: 0.9rem;">Documento: ${c.numero_documento}</div>
-              <div style="font-size: 0.85rem; color: var(--color-text-muted);">
-                Campo: <strong>${c.campo_modificado}</strong>
+      let erroresList = [];
+      if (s.observaciones) {
+        try {
+          const obsJson = JSON.parse(s.observaciones);
+          if (obsJson && Array.isArray(obsJson.errores) && obsJson.errores.length > 0) {
+            erroresList = obsJson.errores;
+          }
+        } catch (e) {
+          if (s.observaciones.trim() !== '' && s.observaciones !== '[]' && s.observaciones !== '{}') {
+            erroresList = [s.observaciones];
+          }
+        }
+      }
+
+      const tieneErrores = (s.registros_error && s.registros_error > 0) || erroresList.length > 0 || s.estado === 'ERROR';
+      const estadoClass = tieneErrores ? 'error' : 'completamente-exitosa';
+      const estadoLabel = tieneErrores ? 'ERROR' : (s.estado === 'COMPLETADO' ? 'COMPLETADA' : s.estado);
+
+      const nuevos = cambios.filter(c => c.campo_modificado === 'REGISTRO_NUEVO');
+      const actualizaciones = cambios.filter(c => c.campo_modificado !== 'REGISTRO_NUEVO');
+
+      let nuevosHtml = '';
+      if (nuevos.length > 0) {
+        let cardsNuevas = '';
+        nuevos.forEach(n => {
+          const p = n.persona || {};
+          let camposItems = '';
+          const MAPA_CAMPOS_ETIQUETAS = {
+            nombres: 'Nombre',
+            apellidos: 'Apellido',
+            fecha_nacimiento: 'Fecha de nacimiento',
+            genero: 'Género',
+            direccion: 'Dirección',
+            barrio: 'Barrio',
+            estrato: 'Estrato',
+            correo: 'Correo',
+            estado_civil: 'Estado civil',
+            eps: 'EPS',
+            telefono: 'Teléfono'
+          };
+          Object.keys(MAPA_CAMPOS_ETIQUETAS).forEach(key => {
+            const val = p[key];
+            if (val !== undefined && val !== null && String(val).trim() !== '') {
+              camposItems += `
+                <div style="background: var(--color-surface); border: 1px solid var(--color-border); padding: 10px; border-radius: var(--radius-md); margin-bottom: 8px;">
+                  <div style="font-weight: 800; font-size: 0.85rem; color: var(--color-primary); text-transform: uppercase; margin-bottom: 4px;">
+                    ${MAPA_CAMPOS_ETIQUETAS[key]}
+                  </div>
+                  <div style="font-size: 0.85rem; color: var(--color-danger); margin-bottom: 2px;">
+                    <strong>ANTERIOR:</strong> No registrado
+                  </div>
+                  <div style="font-size: 0.85rem; color: var(--color-success);">
+                    <strong>NUEVO:</strong> ${val}
+                  </div>
+                </div>
+              `;
+            }
+          });
+
+          cardsNuevas += `
+            <div class="tarjeta-blanca" style="padding: 14px; margin-bottom: 12px; border-left: 4px solid var(--color-success); border-radius: var(--radius-md);">
+              <h4 style="color: var(--color-success); margin: 0 0 6px 0; font-weight: 800; font-size: 0.95rem; display: flex; align-items: center; gap: 6px;">
+                <ion-icon name="person-add-outline"></ion-icon> ACCIÓN: NUEVO REGISTRO
+              </h4>
+              <div style="font-size: 0.88rem; font-weight: 700; color: var(--color-text); margin-bottom: 10px;">
+                <div>Documento: ${n.numero_documento}</div>
+                <div style="font-weight: normal; margin-top: 4px; color: var(--color-text-muted);">Estado: Registro creado correctamente</div>
               </div>
-              <div style="font-size: 0.85rem; color: var(--color-danger);">Antes: ${c.valor_anterior || '(vacío)'}</div>
-              <div style="font-size: 0.85rem; color: var(--color-success);">Después: ${c.valor_nuevo || '(vacío)'}</div>
+              <div style="font-size: 0.8rem; font-weight: 800; color: var(--color-text-muted); text-transform: uppercase; margin-bottom: 6px;">
+                DETALLES
+              </div>
+              ${camposItems}
             </div>
           `;
         });
+        nuevosHtml = `
+          <h3 style="font-size: 1rem; font-weight: 800; margin: 16px 0 10px 0; color: var(--color-text);">PERSONAS NUEVAS</h3>
+          ${cardsNuevas}
+        `;
+      }
+
+      let actHtml = '';
+      if (actualizaciones.length > 0) {
+        const porDoc = {};
+        actualizaciones.forEach(c => {
+          if (!porDoc[c.numero_documento]) porDoc[c.numero_documento] = [];
+          porDoc[c.numero_documento].push(c);
+        });
+
+        let cardsAct = '';
+        Object.keys(porDoc).forEach(doc => {
+          const listaCambios = porDoc[doc];
+          let camposItems = '';
+          listaCambios.forEach(item => {
+            camposItems += `
+              <div style="background: var(--color-surface); border: 1px solid var(--color-border); padding: 10px; border-radius: var(--radius-md); margin-bottom: 8px;">
+                <div style="font-weight: 800; font-size: 0.85rem; color: var(--color-primary); text-transform: uppercase; margin-bottom: 4px;">
+                  ${this._etiquetaCampo(item.campo_modificado)}
+                </div>
+                <div style="font-size: 0.85rem; color: var(--color-danger); margin-bottom: 2px;">
+                  <strong>ANTERIOR:</strong> ${item.valor_anterior !== null && item.valor_anterior !== undefined ? item.valor_anterior : '(vacío)'}
+                </div>
+                <div style="font-size: 0.85rem; color: var(--color-success);">
+                  <strong>NUEVO:</strong> ${item.valor_nuevo !== null && item.valor_nuevo !== undefined ? item.valor_nuevo : '(vacío)'}
+                </div>
+              </div>
+            `;
+          });
+
+          cardsAct += `
+            <div class="tarjeta-blanca" style="padding: 14px; margin-bottom: 12px; border-left: 4px solid var(--color-warning); border-radius: var(--radius-md);">
+              <h4 style="color: var(--color-primary); margin: 0 0 6px 0; font-weight: 800; font-size: 0.95rem; display: flex; align-items: center; gap: 6px;">
+                <ion-icon name="create-outline"></ion-icon> PERSONA ACTUALIZADA
+              </h4>
+              <div style="font-size: 0.88rem; font-weight: 700; color: var(--color-text); margin-bottom: 10px;">
+                Documento: ${doc}
+              </div>
+              <div style="font-size: 0.8rem; font-weight: 800; color: var(--color-text-muted); text-transform: uppercase; margin-bottom: 6px;">
+                CAMBIOS
+              </div>
+              ${camposItems}
+            </div>
+          `;
+        });
+
+        actHtml = `
+          <h3 style="font-size: 1rem; font-weight: 800; margin: 16px 0 10px 0; color: var(--color-text);">PERSONAS ACTUALIZADAS</h3>
+          ${cardsAct}
+        `;
+      }
+
+      let sinCambiosHtml = '';
+      if (s.registros_sin_cambios && s.registros_sin_cambios > 0) {
+        sinCambiosHtml = `
+          <div class="tarjeta-blanca" style="padding: 14px; margin-bottom: 12px; border-left: 4px solid var(--color-border); border-radius: var(--radius-md);">
+            <h4 style="color: var(--color-text-muted); margin: 0 0 6px 0; font-weight: 800; font-size: 0.95rem; display: flex; align-items: center; gap: 6px;">
+              <ion-icon name="checkmark-circle-outline"></ion-icon> SIN CAMBIOS
+            </h4>
+            <div style="font-size: 0.88rem; color: var(--color-text-muted);">
+              Se procesaron ${s.registros_sin_cambios} registro(s) que no requirieron modificaciones (datos idénticos al servidor).
+            </div>
+          </div>
+        `;
+      }
+
+      let erroresHtml = '';
+      if (tieneErrores) {
+        let itemsErrores = '';
+        if (erroresList.length > 0) {
+          itemsErrores = erroresList.map(err => `<li style="margin-bottom: 4px;">${err}</li>`).join('');
+        } else {
+          itemsErrores = `<li>La sincronización finalizó con estado ERROR (${s.registros_error || 0} registro(s) con fallo).</li>`;
+        }
+
+        erroresHtml = `
+          <div style="background: #fdf2f2; border: 1px solid var(--color-danger); border-radius: var(--radius-md); padding: 14px; margin-bottom: 16px;">
+            <h4 style="color: var(--color-danger); margin: 0 0 8px 0; font-size: 0.95rem; font-weight: 800; display: flex; align-items: center; gap: 6px;">
+              <ion-icon name="warning-outline"></ion-icon> ERRORES DE PROCESAMIENTO
+            </h4>
+            <ul style="margin: 0; padding-left: 20px; font-size: 0.85rem; color: #991b1b; line-height: 1.4;">
+              ${itemsErrores}
+            </ul>
+          </div>
+        `;
       }
 
       detCont.innerHTML = `
         <div class="tarjeta-blanca" style="padding: 16px; margin-bottom: 16px;">
-          <h2 style="font-size: 1.25rem; font-weight: 800; color: var(--color-primary); margin-bottom: 12px; border-bottom: 1px solid var(--color-border); padding-bottom: 6px;">Sincronización #${s.id}</h2>
-          <div style="font-size: 0.9rem; line-height: 1.5; color: var(--color-text-muted);">
-            <div><strong>Fecha de inicio:</strong> ${new Date(s.fecha_inicio).toLocaleString('es-CO')}</div>
-            <div><strong>Fecha de fin:</strong> ${s.fecha_fin ? new Date(s.fecha_fin).toLocaleString('es-CO') : 'N/A'}</div>
-            <div><strong>Encuestador:</strong> ${s.nombre_usuario || 'N/A'}</div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid var(--color-border); padding-bottom: 8px;">
+            <h2 style="font-size: 1.2rem; font-weight: 800; color: var(--color-primary); margin: 0;">Sincronización #${s.id}</h2>
+            <span class="insignia ${estadoClass}">${estadoLabel}</span>
+          </div>
+
+          <div style="font-size: 0.88rem; line-height: 1.6; color: var(--color-text-muted);">
+            <div><strong>Realizado por:</strong> ${s.nombre_usuario || 'Encuestador'}</div>
+            <div><strong>Fecha:</strong> ${new Date(s.fecha_inicio).toLocaleString('es-CO')}</div>
+            <div><strong>Origen:</strong> ONLINE</div>
             <div><strong>Duración:</strong> ${s.duracion_ms ? (s.duracion_ms / 1000).toFixed(2) + 's' : 'N/A'}</div>
-            <div><strong>Total registros en lote:</strong> ${s.cantidad_registros}</div>
-            <div style="margin-top: 8px; font-weight: 700; color: var(--color-text);">
-              Nuevos: ${s.registros_nuevos} · Actualizados: ${s.registros_actualizados} · Errores: ${s.registros_error}
+          </div>
+
+          <div style="margin-top: 14px; background: var(--color-surface); padding: 12px; border-radius: var(--radius-md); border: 1px solid var(--color-border);">
+            <div style="font-weight: 800; font-size: 0.9rem; color: var(--color-text); margin-bottom: 8px; border-bottom: 1px solid var(--color-border); padding-bottom: 4px;">RESUMEN DE PROCESAMIENTO</div>
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; font-size: 0.85rem; color: var(--color-text-muted);">
+              <div>Total procesadas: <strong>${s.cantidad_registros || 0}</strong></div>
+              <div>Personas nuevas: <strong>${s.registros_nuevos || 0}</strong></div>
+              <div>Actualizadas: <strong>${s.registros_actualizados || 0}</strong></div>
+              <div>Sin cambios: <strong>${s.registros_sin_cambios || 0}</strong></div>
+              <div>Errores: <strong style="color: ${s.registros_error ? 'var(--color-danger)' : 'inherit'};">${s.registros_error || 0}</strong></div>
+              <div>Conflictos: <strong>${s.registros_conflictos || 0}</strong></div>
             </div>
           </div>
-          <div style="display: flex; gap: 8px; margin-top: 16px;">
-            <button class="boton-principal" style="flex: 1;" onclick="appAdminReportes.descargarReporte(${s.id}, 'pdf')">
-              <ion-icon name="download"></ion-icon> Descargar PDF
-            </button>
-            <button class="boton-secundario" style="flex: 1;" onclick="appAdminReportes.descargarReporte(${s.id}, 'txt')">
-              <ion-icon name="document-text"></ion-icon> Descargar TXT
-            </button>
-          </div>
         </div>
-        <h3 style="font-size: 1rem; font-weight: 800; margin-bottom: 10px;">Detalle de Cambios</h3>
-        <div style="max-height: 300px; overflow-y: auto;">
-          ${cambiosHtml}
+
+        ${nuevosHtml}
+        ${actHtml}
+        ${sinCambiosHtml}
+        ${erroresHtml}
+
+        <div style="margin-top: 16px; margin-bottom: 24px;">
+          <button class="boton-principal" style="width: 100%; min-height: 44px; font-size: 0.95rem; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px;" onclick="appAdminReportes.descargarReporte(${s.id}, 'pdf')">
+            <ion-icon name="document-text-outline" style="font-size: 1.2rem;"></ion-icon> 📄 Descargar Reporte PDF
+          </button>
         </div>
       `;
     } catch (e) {
       console.error('Error al cargar detalle en admin:', e);
-      detCont.innerHTML = '<div style="text-align: center; color: var(--color-danger);">Error de comunicación con la API.</div>';
+      detCont.innerHTML = `<div style="text-align: center; padding: 20px; color: var(--color-danger); font-size: 0.9rem;">Error al cargar detalle de sincronización: ${e.message || 'Error al cargar detalle.'}</div>`;
     }
   }
 
@@ -651,34 +793,27 @@ class AdminReportesController {
     document.getElementById('admin-reporte-detalle-seccion').style.display = 'none';
   }
 
-  async descargarReporte(id, formato) {
+  async descargarReporte(id, formato = 'pdf') {
     try {
-      const token = localStorage.getItem('auth_token');
-      const url = apiService.buildUrl(`/reportes/sincronizacion/${id}/${formato}`);
-      
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'ngrok-skip-browser-warning': '69420'
-        }
-      });
-      
-      if (!response.ok) throw new Error('Error al descargar el archivo');
-      const blob = await response.blob();
-      const blobUrl = window.URL.createObjectURL(blob);
-      
-      const a = document.createElement('a');
-      a.href = blobUrl;
-      a.download = `reporte_sync_${id}.${formato}`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(blobUrl);
+      const toast = document.createElement('div');
+      toast.id = 'toast-descarga-pdf-admin';
+      toast.style.cssText = 'position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); background: #1e293b; color: #ffffff; padding: 12px 20px; border-radius: 24px; font-size: 0.88rem; font-weight: 600; z-index: 99999; box-shadow: 0 4px 14px rgba(0,0,0,0.35); text-align: center; animation: fadeIn 200ms ease; min-width: 250px;';
+      toast.innerText = 'Generando y descargando PDF...';
+      document.body.appendChild(toast);
 
-      alert(`${formato.toUpperCase()} descargado.`);
+      const res = await reportesService.guardarReporteEnDispositivo(id, formato);
+
+      toast.style.background = '#059669';
+      toast.innerText = `Reporte descargado correctamente:\n${res.filename}`;
+
+      setTimeout(() => {
+        if (toast.parentNode) toast.parentNode.removeChild(toast);
+      }, 4000);
     } catch (e) {
-      alert(`Error al descargar el archivo: ${e.message}`);
+      console.error('Error al descargar reporte admin:', e);
+      const existingToast = document.getElementById('toast-descarga-pdf-admin');
+      if (existingToast) existingToast.remove();
+      alert(`No fue posible descargar el reporte: ${e.message || e}`);
     }
   }
 }

@@ -1,0 +1,546 @@
+/* ==========================================================================
+   ESTILOS GENERALES Y DESIGN TOKENS (CSS3 NATIVO)
+   ========================================================================== */
+:root {
+  /* Paleta de colores principal */
+  --color-primary: #12a68b;
+  --color-primary-dark: #0b6e5d;
+  --color-primary-gradient: linear-gradient(135deg, #14b8a6 0%, #0b7a68 100%);
+  
+  /* Colores de fondo y tarjetas */
+  --color-bg: #f4f6f8;
+  --color-surface: #ffffff;
+  --color-border: #e2e6ea;
+
+  /* Colores de texto */
+  --color-text: #14213d;
+  --color-text-muted: #6b7686;
+
+  /* Estados semánticos */
+  --color-success: #1fa971;
+  --color-success-bg: #dff5e8;
+  --color-warning: #f5a623;
+  --color-warning-bg: #fdf0d8;
+  --color-danger: #e5484d;
+  --color-danger-bg: #fbe0e1;
+  --color-info: #6d5bd0;
+  --color-info-bg: #ece8fb;
+
+  /* Bordes y Geometría */
+  --radius-lg: 20px;
+  --radius-md: 14px;
+  --radius-sm: 10px;
+  --radius-pill: 999px;
+
+  /* Sombras suaves */
+  --shadow-card: 0 2px 12px rgba(20, 33, 61, 0.06);
+  --shadow-strong: 0 8px 20px rgba(20, 33, 61, 0.10);
+
+  /* Dimensiones del Layout */
+  --tab-bar-height: 65px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  touch-action: manipulation;
+}
+
+/* App Container Root */
+#app-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Área de contenido de las pantallas */
+.vistas-container {
+  flex: 1;
+  width: 100%;
+  height: calc(100% - var(--tab-bar-height));
+  position: relative;
+  overflow: hidden;
+}
+
+.vista-pagina {
+  display: none;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 90px;
+}
+
+.vista-pagina.activa {
+  display: block;
+}
+
+/* ==========================================================================
+   BARRA DE NAVEGACIÓN INFERIOR (TABS)
+   ========================================================================== */
+.barra-navegacion {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: var(--tab-bar-height);
+  background: var(--color-surface);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  box-shadow: 0 -2px 12px rgba(20, 33, 61, 0.08);
+  z-index: 1000;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+.boton-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 6px 0;
+  gap: 4px;
+  transition: color 0.2s ease;
+}
+
+.boton-tab .icono-tab {
+  font-size: 20px;
+  padding: 4px 14px;
+  border-radius: var(--radius-pill);
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.boton-tab.activo {
+  color: var(--color-primary-dark);
+}
+
+.boton-tab.activo .icono-tab {
+  background: var(--color-success-bg);
+  color: var(--color-primary-dark);
+}
+
+/* ==========================================================================
+   COMPONENTES Y TARJETAS REUTILIZABLES
+   ========================================================================== */
+.encabezado-pagina {
+  padding: 20px 16px 12px 16px;
+}
+
+.encabezado-pagina h1 {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--color-text);
+  letter-spacing: -0.02em;
+}
+
+.encabezado-pagina p {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  margin-top: 2px;
+}
+
+/* Tarjeta Blanca Base */
+.tarjeta-blanca {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: 16px;
+  margin: 0 16px 16px 16px;
+}
+
+/* Grilla de Métricas 2x2 */
+.grilla-2x2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 0 16px;
+  margin-bottom: 16px;
+}
+
+.tarjeta-metrica {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: 16px;
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.tarjeta-metrica:active {
+  transform: scale(0.96);
+}
+
+.icono-circulo {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  margin-bottom: 10px;
+}
+.icono-circulo.verde { background: var(--color-success-bg); color: var(--color-primary); }
+.icono-circulo.naranja { background: var(--color-warning-bg); color: var(--color-warning); }
+.icono-circulo.rojo { background: var(--color-danger-bg); color: var(--color-danger); }
+.icono-circulo.morado { background: var(--color-info-bg); color: var(--color-info); }
+
+.valor-metrica {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--color-text);
+  line-height: 1.1;
+}
+
+.etiqueta-metrica {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  margin-top: 2px;
+  font-weight: 600;
+}
+
+/* Banner de Estado */
+.banner-estado {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--color-success-bg);
+  color: #0d5c3a;
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  margin: 0 16px 16px 16px;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.banner-estado.alerta {
+  background: var(--color-warning-bg);
+  color: #855304;
+}
+
+.punto-estado {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--color-success);
+  flex-shrink: 0;
+}
+
+.banner-estado.alerta .punto-estado {
+  background: var(--color-warning);
+}
+
+/* Buscador y Filtros */
+.caja-buscador {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--color-surface);
+  border-radius: var(--radius-pill);
+  padding: 12px 16px;
+  margin: 0 16px 12px 16px;
+  box-shadow: var(--shadow-card);
+  color: var(--color-text-muted);
+}
+
+.caja-buscador input {
+  border: none;
+  outline: none;
+  background: transparent;
+  width: 100%;
+  font-size: 0.95rem;
+  color: var(--color-text);
+}
+
+.contenedor-filtros {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 16px 12px 16px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.boton-filtro {
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  border-radius: var(--radius-pill);
+  padding: 8px 16px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.boton-filtro.activo {
+  border-color: var(--color-primary);
+  background: var(--color-success-bg);
+  color: var(--color-primary-dark);
+}
+
+/* Insignias / Badges */
+.insignia {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+.insignia.sincronizado { background: var(--color-success-bg); color: var(--color-success); }
+.insignia.pendiente { background: var(--color-warning-bg); color: var(--color-warning); }
+.insignia.error { background: var(--color-danger-bg); color: var(--color-danger); }
+.insignia.inactivo { background: #eef1f4; color: var(--color-text-muted); }
+
+/* Listas y Tarjetas de Personas */
+.tarjeta-persona {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+  margin: 0 16px 10px 16px;
+  box-shadow: var(--shadow-card);
+  cursor: pointer;
+}
+
+.avatar-persona {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #14b8a6, #0e7490);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 0.95rem;
+  flex-shrink: 0;
+}
+
+.persona-info {
+  flex: 1;
+  margin: 0 12px;
+}
+
+.persona-nombre {
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.persona-sub {
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+/* ==========================================================================
+   BOTONES Y FORMULARIOS
+   ========================================================================== */
+.boton-principal {
+  width: 100%;
+  height: 52px;
+  background: var(--color-primary-gradient);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(18, 166, 139, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.boton-principal:active {
+  transform: scale(0.98);
+}
+
+.boton-secundario {
+  width: 100%;
+  height: 48px;
+  background: transparent;
+  color: var(--color-danger);
+  border: 1.5px solid var(--color-danger);
+  border-radius: var(--radius-md);
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* Grupos de Inputs */
+.campo-formulario {
+  margin-bottom: 16px;
+}
+
+.campo-formulario label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  margin-bottom: 6px;
+
+}
+
+.campo-formulario input,
+.campo-formulario select {
+  width: 100%;
+  height: 48px;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0 14px;
+  font-size: 0.95rem;
+  background: var(--color-surface);
+  color: var(--color-text);
+  outline: none;
+}
+
+.campo-formulario input:focus,
+.campo-formulario select:focus {
+  border-color: var(--color-primary);
+}
+
+/* ==========================================================================
+   MODALES (FORMULARIO ÚNICO Y LOGIN)
+   ========================================================================== */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(20, 33, 61, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 2000;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.modal-overlay.activo {
+  display: flex;
+}
+
+.modal-contenido {
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  background: var(--color-surface);
+  border-top-left-radius: 24px;
+  border-top-right-radius: 24px;
+  display: flex;
+  flex-direction: column;
+  animation: deslizarSubir 0.25s ease-out;
+  box-shadow: var(--shadow-strong);
+}
+
+@keyframes deslizarSubir {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.modal-header {
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modal-header h2 {
+  font-size: 1.3rem;
+  font-weight: 800;
+}
+
+.boton-cerrar-modal {
+  background: transparent;
+  border: none;
+  font-size: 24px;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.modal-body {
+  padding: 20px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* PANTALLA LOGIN COMPLETA */
+.pantalla-login {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--color-surface);
+  z-index: 3000;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 24px;
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.login-logo {
+  width: 72px;
+  height: 72px;
+  background: var(--color-success-bg);
+  color: var(--color-primary);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  margin: 0 auto 16px auto;
+}
+
+.login-titulo {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+.login-subtitulo {
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+  margin-top: 4px;
+}
+
+
