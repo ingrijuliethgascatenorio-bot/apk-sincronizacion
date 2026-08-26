@@ -46,6 +46,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // Configuración del Enlace de Descarga APK real
   const btnDownloadApk = document.getElementById('btn-download-apk');
   if (btnDownloadApk) {
-    btnDownloadApk.href = './downloads/SaluData.apk';
+    btnDownloadApk.href = './downloads/saluData.apk';
   }
 });
