@@ -184,6 +184,7 @@ class AppController {
       this.cargarPerfil();
     } else if (nombreTab === 'admin-inicio') {
       await adminController.cargarAdminDashboard();
+      await adminController.cargarUsuariosRegistrados();
     } else if (nombreTab === 'admin-inconsistencias') {
       await adminController.cargarAdminInconsistencias();
     } else if (nombreTab === 'admin-auditoria') {
@@ -1187,7 +1188,12 @@ window.appAdmin = {
   onBuscarAuditoria: (e) => adminController.onBuscarAuditoria(e),
   onCambiarFechaAuditoria: (e) => adminController.onCambiarFechaAuditoria(e),
   filtrarHoyAuditoria: () => adminController.filtrarHoyAuditoria(),
-  limpiarFiltrosAuditoria: () => adminController.limpiarFiltrosAuditoria()
+  limpiarFiltrosAuditoria: () => adminController.limpiarFiltrosAuditoria(),
+  abrirModalNuevoUsuario: () => adminController.abrirModalNuevoUsuario(),
+  cerrarModalNuevoUsuario: () => adminController.cerrarModalNuevoUsuario(),
+  guardarNuevoUsuario: (e) => adminController.guardarNuevoUsuario(e),
+  abrirModalEditarUsuario: (id) => adminController.abrirModalEditarUsuario(id),
+  cargarUsuariosRegistrados: () => adminController.cargarUsuariosRegistrados()
 };
 
 window.appTema = {

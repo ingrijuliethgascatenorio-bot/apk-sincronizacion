@@ -428,6 +428,134 @@ class AdminController {
       alert(`Error al resolver conflicto: ${e.message}`);
     }
   }
+
+  /**
+   * Modal de registro/edición de encuestadores (Admin > Inicio). Reutiliza
+   * ejecutarFetch (URL, headers y token) y el endpoint /admin/usuarios,
+   * protegido solo para ADMIN en el backend.
+   */
+  abrirModalNuevoUsuario() {
+    document.getElementById('form-usuario').reset();
+    document.getElementById('usuario-id').value = '';
+    document.getElementById('usuario-rol').value = 'ENCUESTADOR';
+    document.getElementById('usuario-estado').value = 'Activo';
+    document.getElementById('usuario-contrasena').placeholder = 'Mínimo 4 caracteres';
+    document.getElementById('modal-usuario-titulo').textContent = 'Registrar Encuestador';
+    document.getElementById('usuario-form-boton').innerHTML = '<ion-icon name="checkmark-circle"></ion-icon> Registrar Encuestador';
+    const errorDiv = document.getElementById('usuario-form-error');
+    errorDiv.style.display = 'none';
+    errorDiv.textContent = '';
+    document.getElementById('modal-usuario').classList.add('activo');
+  }
+
+  cerrarModalNuevoUsuario() {
+    document.getElementById('modal-usuario').classList.remove('activo');
+  }
+
+  /**
+   * Carga las tarjetas de "Usuarios Registrados" en Admin > Inicio.
+   * Guarda la lista en memoria para poder abrir el modal de edición sin
+   * pedir el usuario individual al backend.
+   */
+  async cargarUsuariosRegistrados() {
+    const contenedor = document.getElementById('admin-lista-usuarios');
+    try {
+      this.listaUsuarios = await this.ejecutarFetch('/admin/usuarios');
+
+      if (!this.listaUsuarios || this.listaUsuarios.length === 0) {
+        contenedor.innerHTML = '<p style="color: var(--color-text-muted); text-align: center; padding: 12px;">No hay usuarios registrados.</p>';
+        return;
+      }
+
+      contenedor.innerHTML = this.listaUsuarios.map(u => `
+        <div class="tarjeta-blanca" style="padding: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+          <div>
+            <div style="font-weight: 800;">${u.nombre} ${u.apellido}</div>
+            <div style="font-size: 0.85rem; color: var(--color-text-muted);">@${u.usuario} · ${u.correo}</div>
+            <div style="margin-top: 6px; display: flex; gap: 6px;">
+              <span class="insignia ${u.rol === 'ADMIN' ? 'sincronizado' : 'pendiente'}">${u.rol}</span>
+              <span class="insignia ${u.estado === 'Activo' ? 'sincronizado' : 'pendiente'}">${u.estado}</span>
+            </div>
+          </div>
+          <button class="boton-secundario" style="padding: 6px 12px; font-size: 0.85rem; min-height: 36px; border-radius: var(--radius-md);" onclick="appAdmin.abrirModalEditarUsuario(${u.id})">
+            <ion-icon name="create-outline"></ion-icon> Editar
+          </button>
+        </div>
+      `).join('');
+    } catch (e) {
+      contenedor.innerHTML = `<p style="color: var(--color-danger); text-align: center; padding: 12px;">Error al cargar usuarios: ${e.message}</p>`;
+    }
+  }
+
+  abrirModalEditarUsuario(id) {
+    const usuario = (this.listaUsuarios || []).find(u => u.id === id);
+    if (!usuario) {
+      alert('No se encontró el usuario seleccionado.');
+      return;
+    }
+
+    document.getElementById('form-usuario').reset();
+    document.getElementById('usuario-id').value = usuario.id;
+    document.getElementById('usuario-usuario').value = usuario.usuario;
+    document.getElementById('usuario-contrasena').value = '';
+    document.getElementById('usuario-contrasena').placeholder = 'Dejar en blanco para no cambiarla';
+    document.getElementById('usuario-nombre').value = usuario.nombre;
+    document.getElementById('usuario-apellido').value = usuario.apellido;
+    document.getElementById('usuario-correo').value = usuario.correo;
+    document.getElementById('usuario-rol').value = usuario.rol;
+    document.getElementById('usuario-estado').value = usuario.estado;
+    document.getElementById('modal-usuario-titulo').textContent = 'Editar Usuario';
+    document.getElementById('usuario-form-boton').innerHTML = '<ion-icon name="checkmark-circle"></ion-icon> Guardar Cambios';
+
+    const errorDiv = document.getElementById('usuario-form-error');
+    errorDiv.style.display = 'none';
+    errorDiv.textContent = '';
+    document.getElementById('modal-usuario').classList.add('activo');
+  }
+
+  async guardarNuevoUsuario(event) {
+    event.preventDefault();
+    const errorDiv = document.getElementById('usuario-form-error');
+    errorDiv.style.display = 'none';
+    errorDiv.textContent = '';
+
+    const id = document.getElementById('usuario-id').value;
+    const contrasena = document.getElementById('usuario-contrasena').value;
+
+    if (!id && !contrasena) {
+      errorDiv.textContent = 'La contraseña es obligatoria para registrar un nuevo usuario.';
+      errorDiv.style.display = 'block';
+      return;
+    }
+
+    const payload = {
+      usuario: document.getElementById('usuario-usuario').value.trim(),
+      nombre: document.getElementById('usuario-nombre').value.trim(),
+      apellido: document.getElementById('usuario-apellido').value.trim(),
+      correo: document.getElementById('usuario-correo').value.trim(),
+      rol: document.getElementById('usuario-rol').value,
+      estado: document.getElementById('usuario-estado').value,
+    };
+    if (contrasena) {
+      payload.contrasena = contrasena;
+    }
+
+    try {
+      if (id) {
+        await this.ejecutarFetch(`/admin/usuarios/${id}`, 'PUT', payload);
+        alert('Usuario actualizado exitosamente.');
+      } else {
+        await this.ejecutarFetch('/admin/usuarios', 'POST', payload);
+        alert('Encuestador registrado exitosamente.');
+      }
+      this.cerrarModalNuevoUsuario();
+      await this.cargarAdminDashboard();
+      await this.cargarUsuariosRegistrados();
+    } catch (e) {
+      errorDiv.textContent = e.message || 'No fue posible guardar el usuario.';
+      errorDiv.style.display = 'block';
+    }
+  }
 }
 
 class AdminReportesController {
@@ -820,4 +948,3 @@ class AdminReportesController {
 
 export const adminController = new AdminController();
 export const adminReportesController = new AdminReportesController();
-

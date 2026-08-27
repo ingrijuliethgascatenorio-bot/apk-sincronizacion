@@ -32,12 +32,12 @@
       <form id="form-login" onsubmit="appAuth.iniciarSesion(event)">
         <div class="campo-formulario">
           <label for="login-usuario">Usuario</label>
-          <input type="text" id="login-usuario" placeholder="Ej: encuestador1"/>
+          <input type="text" id="login-usuario" placeholder="Ej: encuestador1" required autocomplete="username" />
         </div>
 
         <div class="campo-formulario">
           <label for="login-password">Contraseña</label>
-          <input type="password" id="login-password" placeholder="••••••••"/>
+          <input type="password" id="login-password" placeholder="••••••••" required autocomplete="current-password"/>
         </div>
 
         <button type="submit" class="boton-principal" id="btn-ingresar">
@@ -189,9 +189,9 @@
         <div style="display: flex; gap: 8px; align-items: end; margin: 0 16px 20px 16px;">
           <div style="flex: 1;">
             <label for="historial-filtro-fecha" style="font-size: 0.75rem; font-weight: 700; color: var(--color-text-muted); text-transform: uppercase;">Fecha</label>
-            <input type="date" id="historial-filtro-fecha" onchange="appHistorial.onCambiarFecha(event)" style="width: 100%; height: 42px; padding: 0 12px; border-radius: var(--radius-md); border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text); font-size: 0.9rem; box-sizing: border-box;" />
+            <input type="date" id="historial-filtro-fecha" onchange="appHistorial.onCambiarFecha(event)" style="width: 100%; padding: 8px 10px; border-radius: var(--radius-md); border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text); font-size: 0.85rem;" />
           </div>
-          <button class="boton-secundario" onclick="appHistorial.limpiarFecha()" style="height: 42px; min-height: 42px; width: auto; padding: 0 16px; border-radius: var(--radius-md); font-size: 0.85rem; box-sizing: border-box;">Limpiar</button>
+          <button class="boton-secundario" onclick="appHistorial.limpiarFecha()" style="min-height: 38px; padding: 8px 14px; border-radius: var(--radius-md); font-size: 0.85rem;">Limpiar</button>
         </div>
 
         <div class="timeline-contenedor" id="lista-historial-contenedor">
@@ -331,6 +331,19 @@
               <span>Total de sincronizaciones realizadas:</span>
               <strong id="admin-metric-syncs">0</strong>
             </div>
+          </div>
+        </div>
+
+        <div style="margin: 20px 16px;">
+          <button class="boton-principal" style="width: 100%; min-height: 46px; display: flex; align-items: center; justify-content: center; gap: 8px;" onclick="appAdmin.abrirModalNuevoUsuario()">
+            <ion-icon name="person-add"></ion-icon> Registrar Encuestador
+          </button>
+        </div>
+
+        <div style="margin: 20px 16px;">
+          <h3 style="font-size: 1.1rem; font-weight: 800; margin-bottom: 12px;">Usuarios Registrados</h3>
+          <div id="admin-lista-usuarios">
+            <p style="color: var(--color-text-muted); text-align: center; padding: 12px;">Cargando usuarios...</p>
           </div>
         </div>
       </section>
@@ -737,6 +750,69 @@
 
             <button type="submit" class="boton-principal" style="width: 100%; margin-top: 12px;">
               <ion-icon name="checkmark-circle"></ion-icon> Resolver Conflicto
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: REGISTRAR / EDITAR ENCUESTADOR (ADMIN > INICIO) -->
+    <div id="modal-usuario" class="modal-overlay">
+      <div class="modal-contenido">
+        <div class="modal-header">
+          <h2 id="modal-usuario-titulo">Registrar Encuestador</h2>
+          <button class="boton-cerrar-modal" onclick="appAdmin.cerrarModalNuevoUsuario()">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <form id="form-usuario" onsubmit="appAdmin.guardarNuevoUsuario(event)">
+            <input type="hidden" id="usuario-id" />
+
+            <div class="campo-formulario">
+              <label for="usuario-usuario">Usuario *</label>
+              <input type="text" id="usuario-usuario" required placeholder="Ej: encuestador2" autocomplete="off" />
+            </div>
+
+            <div class="campo-formulario">
+              <label for="usuario-contrasena" id="usuario-contrasena-label">Contraseña *</label>
+              <input type="password" id="usuario-contrasena" minlength="4" placeholder="Mínimo 4 caracteres" autocomplete="new-password" />
+            </div>
+
+            <div class="campo-formulario">
+              <label for="usuario-nombre">Nombre *</label>
+              <input type="text" id="usuario-nombre" required placeholder="Ej: Juan" />
+            </div>
+
+            <div class="campo-formulario">
+              <label for="usuario-apellido">Apellido *</label>
+              <input type="text" id="usuario-apellido" required placeholder="Ej: Pérez" />
+            </div>
+
+            <div class="campo-formulario">
+              <label for="usuario-correo">Correo *</label>
+              <input type="email" id="usuario-correo" required placeholder="Ej: juan.perez@salud.gov.co" />
+            </div>
+
+            <div class="campo-formulario">
+              <label for="usuario-rol">Rol *</label>
+              <select id="usuario-rol" required>
+                <option value="ENCUESTADOR">Encuestador</option>
+                <option value="ADMIN">Admin</option>
+              </select>
+            </div>
+
+            <div class="campo-formulario">
+              <label for="usuario-estado">Estado *</label>
+              <select id="usuario-estado" required>
+                <option value="Activo">Activo</option>
+                <option value="Inactivo">Inactivo</option>
+              </select>
+            </div>
+
+            <div id="usuario-form-error" style="display: none; background-color: var(--color-danger-bg); color: #991b1b; padding: 10px 14px; border-radius: var(--radius-md); border: 1px solid #fecaca; margin-bottom: 12px; font-size: 0.85rem; font-weight: 600; text-align: center;"></div>
+
+            <button type="submit" class="boton-principal" style="width: 100%; margin-top: 4px;" id="usuario-form-boton">
+              <ion-icon name="checkmark-circle"></ion-icon> Registrar Encuestador
             </button>
           </form>
         </div>
