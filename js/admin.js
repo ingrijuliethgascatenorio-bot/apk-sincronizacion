@@ -14,7 +14,31 @@ class AdminController {
   constructor() {
     this.filtroConflictoEstado = 'PENDIENTE';
     this.paginaConflictos = 1;
-    this.paginaAuditoria = 1;
+    this.inconsistenciasSubTab = 'inconsistencias';
+    this.paginaAuditoriaGeneral = 1;
+
+    this.personasSubTab = 'registradas';
+    this.paginaPersonas = 1;
+    this.filtroPersonasEncuestadorId = null;
+    this.filtroPersonasFecha = '';
+    this.filtroPersonasSoloError = false;
+    this.listaUsuarios = [];
+  }
+
+  /**
+   * Nombre corto (primer nombre + primer apellido) para que no se desborde
+   * de las tarjetas cuando el registro tiene varios nombres/apellidos.
+   */
+  _nombreCorto(nombres, apellidos) {
+    const primerNombre = (nombres || '').trim().split(' ')[0] || '';
+    const primerApellido = (apellidos || '').trim().split(' ')[0] || '';
+    return `${primerNombre} ${primerApellido}`.trim();
+  }
+
+  // Igual que _nombreCorto pero para un string ya combinado ("Nombre Apellido...")
+  _acortarNombreCombinado(nombreCompleto) {
+    const partes = (nombreCompleto || '').trim().split(' ').filter(Boolean);
+    return partes.slice(0, 2).join(' ');
   }
 
   /**
@@ -74,11 +98,49 @@ class AdminController {
   }
 
   /**
+   * Entrada a Admin > Inconsistencias: carga el submenú activo
+   * (Inconsistencias o Auditoría), recordando cuál estaba seleccionado.
+   */
+  async cargarAdminInconsistenciasView() {
+    if (this.inconsistenciasSubTab === 'auditoria') {
+      await this.cargarAdminAuditoriaGeneral();
+    } else {
+      await this.cargarAdminInconsistencias();
+    }
+  }
+
+  cambiarSubTabInconsistencias(tab) {
+    this.inconsistenciasSubTab = tab;
+    document.getElementById('btn-subtab-inconsistencias').classList.toggle('activo', tab === 'inconsistencias');
+    document.getElementById('btn-subtab-auditoria').classList.toggle('activo', tab === 'auditoria');
+    document.getElementById('subvista-inconsistencias').style.display = tab === 'inconsistencias' ? 'block' : 'none';
+    document.getElementById('subvista-auditoria').style.display = tab === 'auditoria' ? 'block' : 'none';
+
+    if (tab === 'auditoria') {
+      this.cargarAdminAuditoriaGeneral();
+    } else {
+      this.cargarAdminInconsistencias();
+    }
+  }
+
+  /**
    * Carga la bandeja de Inconsistencias (conflictos de sincronización)
    */
   async cargarAdminInconsistencias() {
     const contenedor = document.getElementById('lista-conflictos-contenedor');
     if (!contenedor) return;
+
+    // Tarjetas de estadística superiores (Pendientes / Resueltas)
+    try {
+      const metricas = await this.ejecutarFetch('/admin/conflictos/metricas');
+      const elPend = document.getElementById('inconsistencias-metric-pendientes');
+      const elRes = document.getElementById('inconsistencias-metric-resueltas');
+      if (elPend) elPend.textContent = metricas.pendientes;
+      if (elRes) elRes.textContent = metricas.resueltos;
+    } catch (e) {
+      console.error('Error al cargar métricas de inconsistencias:', e);
+    }
+
     contenedor.innerHTML = `
       <div style="text-align: center; padding: 24px 16px; color: var(--color-text-muted);">
         Cargando inconsistencias...
@@ -192,62 +254,58 @@ class AdminController {
   cambiarFiltroConf(estado, btnEl) {
     this.filtroConflictoEstado = estado;
     this.paginaConflictos = 1;
-    document.querySelectorAll('.contenedor-filtros .boton-filtro').forEach(btn => btn.classList.remove('activo'));
+    if (btnEl && btnEl.parentElement) {
+      btnEl.parentElement.querySelectorAll('.boton-filtro').forEach(btn => btn.classList.remove('activo'));
+    }
     if (btnEl) btnEl.classList.add('activo');
     this.cargarAdminInconsistencias();
   }
 
   /**
-   * Carga el historial de auditoría (conflictos ya resueltos)
+   * Auditoría (Admin > Inconsistencias > Auditoría): tarjetas de las
+   * inconsistencias YA RESUELTAS por un admin — qué campo se cambió, cuál
+   * era el valor antes, cuál quedó, y la justificación. NO muestra las
+   * personas que se registran (eso vive en Personas).
    */
-  async cargarAdminAuditoria() {
+  async cargarAdminAuditoriaGeneral() {
+    const contenedor = document.getElementById('lista-auditoria-contenedor');
+    if (!contenedor) return;
+    contenedor.innerHTML = `
+      <div style="text-align: center; padding: 24px 16px; color: var(--color-text-muted);">
+        Cargando auditoría...
+      </div>
+    `;
+
     try {
       let lista = await this.ejecutarFetch('/admin/conflictos?estado=RESUELTO');
-      const contenedor = document.getElementById('lista-auditoria-contenedor');
-      if (!contenedor) return;
-      contenedor.innerHTML = '';
 
-      // Aplicar término de búsqueda
       const termino = (document.getElementById('admin-auditoria-busqueda')?.value || '').trim().toLowerCase();
       if (termino !== '') {
-        lista = lista.filter(c => c.persona_documento.toLowerCase().includes(termino));
+        lista = lista.filter(c =>
+          c.persona_documento.toLowerCase().includes(termino) ||
+          (c.encuestador_nombre || '').toLowerCase().includes(termino) ||
+          etiquetaCampoConflicto(c.campo).toLowerCase().includes(termino)
+        );
       }
 
-      // Aplicar filtro de fecha
-      const filtroFecha = document.getElementById('admin-auditoria-fecha')?.value;
-      if (filtroFecha) {
-        lista = lista.filter(c => {
-          const cFecha = new Date(c.fecha_resolucion || c.fecha_creacion).toISOString().split('T')[0];
-          return cFecha === filtroFecha;
-        });
-      }
-
-      const totalItems = lista.length;
-      const itemsPorPagina = 20;
-      const totalPaginas = Math.ceil(totalItems / itemsPorPagina);
-      if (this.paginaAuditoria > totalPaginas) {
-        this.paginaAuditoria = Math.max(1, totalPaginas);
-      }
-
-      if (totalItems === 0) {
+      if (lista.length === 0) {
         contenedor.innerHTML = `
           <div style="text-align: center; padding: 40px 16px; color: var(--color-text-muted);">
             <p>No se registran auditorías de resolución de conflictos aún.</p>
           </div>
         `;
-        renderizarPaginador(0, itemsPorPagina, 1, 'paginacion-auditoria', () => {});
+        renderizarPaginador(0, 20, 1, 'paginacion-auditoria', () => {});
         return;
       }
 
-      const offset = (this.paginaAuditoria - 1) * itemsPorPagina;
-      const itemsAPresentar = lista.slice(offset, offset + itemsPorPagina);
+      const itemsPorPagina = 20;
+      const totalPaginas = Math.ceil(lista.length / itemsPorPagina);
+      if (this.paginaAuditoriaGeneral > totalPaginas) this.paginaAuditoriaGeneral = Math.max(1, totalPaginas);
+      const offset = (this.paginaAuditoriaGeneral - 1) * itemsPorPagina;
+      const pagina = lista.slice(offset, offset + itemsPorPagina);
 
-      itemsAPresentar.forEach(c => {
-        const item = document.createElement('div');
-        item.className = 'tarjeta-blanca';
-        item.style.marginBottom = '12px';
-        item.style.padding = '16px';
-        item.innerHTML = `
+      contenedor.innerHTML = pagina.map(c => `
+        <div class="tarjeta-blanca" style="padding: 16px; margin-bottom: 12px;">
           <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed var(--color-border); padding-bottom: 8px; margin-bottom: 8px;">
             <strong>Doc: ${c.persona_documento}</strong>
             <span class="insignia sincronizado" style="font-size: 0.75rem;">${c.decision}</span>
@@ -264,46 +322,496 @@ class AdminController {
               "${c.motivo}"
             </div>
           </div>
-        `;
-        contenedor.appendChild(item);
-      });
+        </div>
+      `).join('');
 
-      renderizarPaginador(totalItems, itemsPorPagina, this.paginaAuditoria, 'paginacion-auditoria', (nuevaPag) => {
-        this.paginaAuditoria = nuevaPag;
-        this.cargarAdminAuditoria();
-        const listCont = document.getElementById('lista-auditoria-contenedor');
-        if (listCont) listCont.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      renderizarPaginador(lista.length, itemsPorPagina, this.paginaAuditoriaGeneral, 'paginacion-auditoria', (nuevaPag) => {
+        this.paginaAuditoriaGeneral = nuevaPag;
+        this.cargarAdminAuditoriaGeneral();
+        contenedor.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       });
     } catch (e) {
-      console.error('Error al cargar logs de auditoría:', e);
+      console.error('Error al cargar auditoría:', e);
+      contenedor.innerHTML = `<div style="text-align: center; padding: 24px 16px; color: var(--color-danger);">Error al cargar auditoría: ${e.message}</div>`;
     }
   }
 
   onBuscarAuditoria(event) {
-    this.paginaAuditoria = 1;
-    this.cargarAdminAuditoria();
+    this.paginaAuditoriaGeneral = 1;
+    this.cargarAdminAuditoriaGeneral();
   }
 
-  onCambiarFechaAuditoria(event) {
-    this.paginaAuditoria = 1;
-    this.cargarAdminAuditoria();
+  // ═══════════════════════════════════════════════════════════════════════
+  // ADMIN > PERSONAS (Registradas / Encuestadores)
+  // ═══════════════════════════════════════════════════════════════════════
+
+  /**
+   * Entrada a Admin > Personas: carga los chips de encuestadores para el
+   * filtro, el subtítulo, y el submenú activo (Registradas o Encuestadores).
+   */
+  async cargarAdminPersonasView() {
+    await this._cargarChipsEncuestadores();
+    if (this.personasSubTab === 'encuestadores') {
+      await this.cargarUsuariosRegistrados();
+    } else {
+      await this.cargarPersonasRegistradas();
+    }
   }
 
-  filtrarHoyAuditoria() {
-    const hoyStr = new Date().toISOString().split('T')[0];
-    const inputFecha = document.getElementById('admin-auditoria-fecha');
-    if (inputFecha) inputFecha.value = hoyStr;
-    this.paginaAuditoria = 1;
-    this.cargarAdminAuditoria();
+  cambiarSubTabPersonas(tab) {
+    this.personasSubTab = tab;
+    document.getElementById('btn-subtab-personas-registradas').classList.toggle('activo', tab === 'registradas');
+    document.getElementById('btn-subtab-personas-encuestadores').classList.toggle('activo', tab === 'encuestadores');
+    document.getElementById('subvista-personas-registradas').style.display = tab === 'registradas' ? 'block' : 'none';
+    document.getElementById('subvista-personas-encuestadores').style.display = tab === 'encuestadores' ? 'block' : 'none';
+
+    if (tab === 'encuestadores') {
+      this.cargarUsuariosRegistrados();
+    } else {
+      this.cargarPersonasRegistradas();
+    }
   }
 
-  limpiarFiltrosAuditoria() {
-    const inputBuscar = document.getElementById('admin-auditoria-busqueda');
-    const inputFecha = document.getElementById('admin-auditoria-fecha');
+  async _cargarChipsEncuestadores() {
+    try {
+      this.listaUsuarios = await this.ejecutarFetch('/admin/usuarios');
+      const encuestadores = this.listaUsuarios.filter(u => u.rol === 'ENCUESTADOR');
+      const activos = this.listaUsuarios.filter(u => u.rol === 'ENCUESTADOR' && u.estado === 'Activo').length;
+
+      const subtitulo = document.getElementById('admin-personas-subtitulo');
+      if (subtitulo) {
+        const totalPersonasEl = document.getElementById('personas-metric-total');
+        subtitulo.textContent = `${totalPersonasEl ? totalPersonasEl.textContent : 0} registradas · ${activos} encuestadores activos`;
+      }
+
+      const contadorReg = document.getElementById('contador-personas-registradas');
+      const contadorEnc = document.getElementById('contador-personas-encuestadores');
+      if (contadorEnc) contadorEnc.textContent = this.listaUsuarios.length;
+
+      // Solo debe existir el chip "Todos" — no se listan nombres de
+      // encuestadores individuales en este filtro.
+    } catch (e) {
+      console.error('Error al cargar encuestadores para filtro:', e);
+    }
+  }
+
+  filtrarPersonasPorEncuestador(id, btnEl) {
+    this.filtroPersonasEncuestadorId = id;
+    this.paginaPersonas = 1;
+    if (btnEl && btnEl.parentElement) {
+      btnEl.parentElement.querySelectorAll('.boton-filtro').forEach(b => b.classList.remove('activo'));
+    }
+    if (btnEl) btnEl.classList.add('activo');
+    this.cargarPersonasRegistradas();
+  }
+
+  onBuscarPersonas(event) {
+    this.paginaPersonas = 1;
+    this.cargarPersonasRegistradas();
+  }
+
+  onCambiarFechaPersonas(event) {
+    this.filtroPersonasFecha = event.target.value || '';
+    this.paginaPersonas = 1;
+    this.cargarPersonasRegistradas();
+  }
+
+  toggleErroresPersonas() {
+    this.filtroPersonasSoloError = !this.filtroPersonasSoloError;
+    const btn = document.getElementById('btn-personas-solo-errores');
+    if (btn) {
+      btn.style.backgroundColor = this.filtroPersonasSoloError ? 'var(--color-danger)' : '';
+      btn.style.color = this.filtroPersonasSoloError ? '#fff' : '';
+      btn.style.borderColor = this.filtroPersonasSoloError ? 'var(--color-danger)' : '';
+    }
+    this.paginaPersonas = 1;
+    this.cargarPersonasRegistradas();
+  }
+
+  limpiarFiltrosPersonas() {
+    const inputBuscar = document.getElementById('admin-personas-busqueda');
+    const inputFecha = document.getElementById('admin-personas-fecha');
     if (inputBuscar) inputBuscar.value = '';
     if (inputFecha) inputFecha.value = '';
-    this.paginaAuditoria = 1;
-    this.cargarAdminAuditoria();
+    this.filtroPersonasFecha = '';
+    this.filtroPersonasSoloError = false;
+    this.filtroPersonasEncuestadorId = null;
+    const btnError = document.getElementById('btn-personas-solo-errores');
+    if (btnError) {
+      btnError.style.backgroundColor = '';
+      btnError.style.color = '';
+      btnError.style.borderColor = '';
+    }
+    const chipsContenedor = document.getElementById('chips-encuestadores-personas');
+    if (chipsContenedor) {
+      chipsContenedor.querySelectorAll('.boton-filtro').forEach((b, i) => b.classList.toggle('activo', i === 0));
+    }
+    this.paginaPersonas = 1;
+    this.cargarPersonasRegistradas();
+  }
+
+  /**
+   * Lista de "Personas Registradas" (Admin > Personas). Usa GET /personas,
+   * que ya trae el aislamiento de datos y el filtro registrado_por/fecha/
+   * con_error implementados en el backend.
+   */
+  async cargarPersonasRegistradas() {
+    const contenedor = document.getElementById('lista-personas-registradas-contenedor');
+    if (!contenedor) return;
+    contenedor.innerHTML = `
+      <div style="text-align: center; padding: 24px 16px; color: var(--color-text-muted);">
+        Cargando personas...
+      </div>
+    `;
+
+    const termino = (document.getElementById('admin-personas-busqueda')?.value || '').trim();
+    const params = new URLSearchParams();
+    params.set('pagina', this.paginaPersonas);
+    params.set('limite', 20);
+    if (termino) params.set('termino', termino);
+    if (this.filtroPersonasEncuestadorId) params.set('registrado_por', this.filtroPersonasEncuestadorId);
+    if (this.filtroPersonasFecha) params.set('fecha', this.filtroPersonasFecha);
+    if (this.filtroPersonasSoloError) params.set('con_error', 'true');
+
+    try {
+      const resp = await this.ejecutarFetch(`/personas?${params.toString()}`);
+      const lista = resp?.datos || [];
+
+      // Tarjetas de estadística (Total / Sincronizadas / Con error)
+      const total = resp?.total ?? 0;
+      const sincronizadas = lista.filter(p => p.estado_sincronizacion === 'SYNCED').length;
+      const conError = lista.filter(p => p.estado_sincronizacion !== 'SYNCED').length;
+      document.getElementById('personas-metric-total').textContent = total;
+      document.getElementById('personas-metric-sincronizadas').textContent = sincronizadas;
+      document.getElementById('personas-metric-error').textContent = conError;
+
+      const subtitulo = document.getElementById('admin-personas-subtitulo');
+      const contadorReg = document.getElementById('contador-personas-registradas');
+      if (contadorReg) contadorReg.textContent = total;
+      if (subtitulo) {
+        const activosCount = (this.listaUsuarios || []).filter(u => u.rol === 'ENCUESTADOR' && u.estado === 'Activo').length;
+        subtitulo.textContent = `${total} registradas · ${activosCount} encuestadores activos`;
+      }
+
+      if (lista.length === 0) {
+        contenedor.innerHTML = `
+          <div style="text-align: center; padding: 40px 16px; color: var(--color-text-muted);">
+            <p>No se encontraron personas con estos filtros.</p>
+          </div>
+        `;
+        renderizarPaginador(0, 20, 1, 'paginacion-personas-registradas', () => {});
+        return;
+      }
+
+      contenedor.innerHTML = lista.map(p => {
+        const iniciales = `${(p.nombres || '?')[0]}${(p.apellidos || '?')[0]}`.toUpperCase();
+        const sincronizado = p.estado_sincronizacion === 'SYNCED';
+        return `
+          <div class="tarjeta-persona" style="flex-direction: column; align-items: stretch; gap: 8px; padding: 14px; margin-bottom: 12px; cursor: pointer;" onclick="appAdmin.abrirDetallePersona('${p.numero_documento}')">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+              <div style="display: flex; gap: 10px; align-items: center; min-width: 0;">
+                <div class="avatar-persona" style="flex-shrink: 0;">${iniciales}</div>
+                <div style="min-width: 0;">
+                  <div class="persona-nombre" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${this._nombreCorto(p.nombres, p.apellidos)}</div>
+                  <div class="persona-sub">CC ${p.numero_documento} · ${p.eps_otro_nombre || 'Sin EPS'}</div>
+                </div>
+              </div>
+              <span class="insignia ${sincronizado ? 'sincronizado' : 'pendiente'}" style="flex-shrink: 0;">${sincronizado ? 'Sincronizado' : 'Pendiente'}</span>
+            </div>
+            ${p.registrado_por_nombre ? `<div style="font-size: 0.8rem; color: var(--color-primary); font-weight: 600;">${this._acortarNombreCombinado(p.registrado_por_nombre)}</div>` : ''}
+          </div>
+        `;
+      }).join('');
+
+      renderizarPaginador(resp.total, resp.limite, resp.pagina, 'paginacion-personas-registradas', (nuevaPag) => {
+        this.paginaPersonas = nuevaPag;
+        this.cargarPersonasRegistradas();
+        contenedor.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      });
+    } catch (e) {
+      console.error('Error al cargar personas registradas:', e);
+      contenedor.innerHTML = `<div style="text-align: center; padding: 24px 16px; color: var(--color-danger);">Error al cargar personas: ${e.message}</div>`;
+    }
+  }
+
+  /**
+   * Lista de tarjetas de "Encuestadores" (Admin > Personas > Encuestadores).
+   */
+  async cargarUsuariosRegistrados() {
+    const contenedor = document.getElementById('admin-lista-usuarios');
+    if (!contenedor) return;
+    try {
+      this.listaUsuarios = await this.ejecutarFetch('/admin/usuarios');
+      const encuestadores = this.listaUsuarios.filter(u => u.rol === 'ENCUESTADOR');
+
+      const activos = encuestadores.filter(u => u.estado === 'Activo').length;
+      const inactivos = encuestadores.filter(u => u.estado !== 'Activo').length;
+      document.getElementById('encuestadores-metric-activos').textContent = activos;
+      document.getElementById('encuestadores-metric-inactivos').textContent = inactivos;
+      const contadorEnc = document.getElementById('contador-personas-encuestadores');
+      if (contadorEnc) contadorEnc.textContent = this.listaUsuarios.length;
+
+      if (this.listaUsuarios.length === 0) {
+        contenedor.innerHTML = '<p style="color: var(--color-text-muted); text-align: center; padding: 12px;">No hay usuarios registrados.</p>';
+        return;
+      }
+
+      // Trae el conteo de personas registradas/sincronizadas/pendientes por
+      // cada encuestador (reutiliza GET /personas?registrado_por=ID, el
+      // mismo endpoint que ya usa el aislamiento de datos).
+      const tarjetas = await Promise.all(this.listaUsuarios.map(async (u) => {
+        let registradas = 0, sincronizadas = 0, pendientes = 0;
+        if (u.rol === 'ENCUESTADOR') {
+          try {
+            const resp = await this.ejecutarFetch(`/personas?registrado_por=${u.id}&limite=1000`);
+            const datos = resp?.datos || [];
+            registradas = resp?.total ?? datos.length;
+            sincronizadas = datos.filter(p => p.estado_sincronizacion === 'SYNCED').length;
+            pendientes = datos.filter(p => p.estado_sincronizacion !== 'SYNCED').length;
+          } catch (e) {
+            // Si falla el conteo para un usuario puntual, se muestra la tarjeta igual sin esas cifras.
+          }
+        }
+        return { u, registradas, sincronizadas, pendientes };
+      }));
+
+      contenedor.innerHTML = tarjetas.map(({ u, registradas, sincronizadas, pendientes }) => {
+        const iniciales = `${u.nombre[0] || '?'}${u.apellido[0] || '?'}`.toUpperCase();
+        return `
+        <div class="tarjeta-blanca" style="padding: 12px; margin-bottom: 10px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <div class="avatar-persona" style="width: 34px; height: 34px; font-size: 0.8rem;">${iniciales}</div>
+              <div>
+                <div style="font-weight: 800; font-size: 0.9rem; line-height: 1.2;">${this._nombreCorto(u.nombre, u.apellido)}</div>
+                <div style="font-size: 0.75rem; color: var(--color-text-muted); line-height: 1.2;">@${u.usuario} · ${u.rol}</div>
+              </div>
+            </div>
+            <span class="insignia ${u.estado === 'Activo' ? 'sincronizado' : 'pendiente'}" style="font-size: 0.7rem;">${u.estado}</span>
+          </div>
+          ${u.rol === 'ENCUESTADOR' ? `
+            <div class="grilla-2x2" style="grid-template-columns: repeat(3, 1fr); margin: 8px 0 0 0; gap: 6px;">
+              <div class="tarjeta-metrica" style="padding: 5px;">
+                <div class="valor-metrica" style="font-size: 1rem;">${registradas}</div>
+                <div class="etiqueta-metrica" style="font-size: 0.62rem;">Registradas</div>
+              </div>
+              <div class="tarjeta-metrica" style="padding: 5px;">
+                <div class="valor-metrica" style="font-size: 1rem; color: var(--color-success);">${sincronizadas}</div>
+                <div class="etiqueta-metrica" style="font-size: 0.62rem;">Sincronizadas</div>
+              </div>
+              <div class="tarjeta-metrica" style="padding: 5px;">
+                <div class="valor-metrica" style="font-size: 1rem; color: var(--color-warning);">${pendientes}</div>
+                <div class="etiqueta-metrica" style="font-size: 0.62rem;">Pendientes</div>
+              </div>
+            </div>
+          ` : ''}
+          <div style="display: flex; gap: 6px; margin-top: 8px;">
+            ${u.rol === 'ENCUESTADOR' ? `
+              <button class="boton-secundario" style="flex: 1; padding: 4px 10px; font-size: 0.8rem; min-height: 32px; border-radius: var(--radius-md);" onclick="appAdmin.abrirModalPersonasUsuario(${u.id})">
+                <ion-icon name="people-outline"></ion-icon> Ver Personas
+              </button>
+            ` : ''}
+            <button class="boton-secundario" style="flex: 1; padding: 4px 10px; font-size: 0.8rem; min-height: 32px; border-radius: var(--radius-md);" onclick="appAdmin.abrirModalEditarUsuario(${u.id})">
+              <ion-icon name="create-outline"></ion-icon> Editar
+            </button>
+          </div>
+        </div>
+      `;
+      }).join('');
+    } catch (e) {
+      contenedor.innerHTML = `<p style="color: var(--color-danger); text-align: center; padding: 12px;">Error al cargar usuarios: ${e.message}</p>`;
+    }
+  }
+
+  /**
+   * Auditoría desde Personas: muestra todas las personas que un
+   * encuestador específico registró.
+   */
+  async abrirModalPersonasUsuario(id) {
+    const usuario = (this.listaUsuarios || []).find(u => u.id === id);
+    const titulo = document.getElementById('modal-personas-usuario-titulo');
+    const contenedor = document.getElementById('lista-personas-usuario-contenedor');
+    titulo.textContent = usuario ? `Personas registradas por ${usuario.nombre} ${usuario.apellido}` : 'Personas Registradas';
+    contenedor.innerHTML = '<p style="color: var(--color-text-muted); text-align: center; padding: 12px;">Cargando personas...</p>';
+    document.getElementById('modal-personas-usuario').classList.add('activo');
+
+    try {
+      const resp = await this.ejecutarFetch(`/personas?registrado_por=${id}&limite=100`);
+      const personas = resp?.datos || [];
+
+      if (personas.length === 0) {
+        contenedor.innerHTML = '<p style="color: var(--color-text-muted); text-align: center; padding: 12px;">Este usuario no ha registrado personas.</p>';
+        return;
+      }
+
+      contenedor.innerHTML = personas.map(p => `
+        <div class="tarjeta-blanca" style="padding: 12px; margin-bottom: 10px; cursor: pointer;" onclick="appAdmin.abrirDetallePersona('${p.numero_documento}')">
+          <div style="font-weight: 800;">${this._nombreCorto(p.nombres, p.apellidos)}</div>
+          <div style="font-size: 0.85rem; color: var(--color-text-muted);">Documento: ${p.numero_documento}</div>
+          <span class="insignia ${p.estado === 'Activo' ? 'sincronizado' : 'pendiente'}" style="margin-top: 6px; display: inline-block;">${p.estado}</span>
+        </div>
+      `).join('');
+    } catch (e) {
+      contenedor.innerHTML = `<p style="color: var(--color-danger); text-align: center; padding: 12px;">Error al cargar personas: ${e.message}</p>`;
+    }
+  }
+
+  cerrarModalPersonasUsuario() {
+    document.getElementById('modal-personas-usuario').classList.remove('activo');
+  }
+
+  /**
+   * Detalle de una persona (Admin > Personas > Registradas). Se abre al
+   * hacer clic en una tarjeta de persona; usa GET /personas/:doc, que ya
+   * trae el nombre de quien la registró.
+   */
+  async abrirDetallePersona(numeroDocumento) {
+    const titulo = document.getElementById('detalle-persona-titulo');
+    const contenedor = document.getElementById('detalle-persona-contenido');
+    titulo.textContent = 'Detalle de Persona';
+    contenedor.innerHTML = '<p style="color: var(--color-text-muted); text-align: center; padding: 12px;">Cargando...</p>';
+    document.getElementById('modal-detalle-persona').classList.add('activo');
+
+    try {
+      const p = await this.ejecutarFetch(`/personas/${numeroDocumento}`);
+      titulo.textContent = `${p.nombres || ''} ${p.apellidos || ''}`.trim();
+
+      const sincronizado = p.estado_sincronizacion === 'SYNCED';
+      const fechaNac = p.fecha_nacimiento ? new Date(p.fecha_nacimiento).toLocaleDateString('es-CO') : '—';
+      const fechaCreacion = p.fecha_creacion ? new Date(p.fecha_creacion).toLocaleString('es-CO') : '—';
+
+      const fila = (etiqueta, valor) => `
+        <div style="display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--color-border);">
+          <span style="color: var(--color-text-muted); font-size: 0.85rem;">${etiqueta}</span>
+          <span style="font-weight: 600; text-align: right;">${valor && valor !== '' ? valor : '—'}</span>
+        </div>
+      `;
+
+      contenedor.innerHTML = `
+        <div style="display: flex; justify-content: center; gap: 8px; margin-bottom: 16px;">
+          <span class="insignia ${sincronizado ? 'sincronizado' : 'pendiente'}">${sincronizado ? 'Sincronizado' : 'Pendiente'}</span>
+          <span class="insignia ${p.estado === 'Activo' ? 'sincronizado' : 'pendiente'}">${p.estado}</span>
+        </div>
+        ${fila('Documento', p.numero_documento)}
+        ${fila('Fecha de nacimiento', fechaNac)}
+        ${fila('Género', p.genero)}
+        ${fila('EPS', p.eps_otro_nombre)}
+        ${fila('Dirección', p.direccion)}
+        ${fila('Barrio', p.barrio)}
+        ${fila('Estrato', p.estrato)}
+        ${fila('Correo', p.correo)}
+        ${fila('Estado civil', p.estado_civil)}
+        ${fila('Teléfono 1', p.telefono1)}
+        ${fila('Teléfono 2', p.telefono2)}
+        ${fila('Teléfono 3', p.telefono3)}
+        ${fila('Registrado por', p.registrado_por_nombre)}
+        ${fila('Fecha de registro', fechaCreacion)}
+      `;
+    } catch (e) {
+      contenedor.innerHTML = `<p style="color: var(--color-danger); text-align: center; padding: 12px;">Error al cargar el detalle: ${e.message}</p>`;
+    }
+  }
+
+  cerrarDetallePersona() {
+    document.getElementById('modal-detalle-persona').classList.remove('activo');
+  }
+
+  /**
+   * Modal de registro/edición de encuestadores. Reutiliza ejecutarFetch
+   * (URL, headers y token) y el endpoint /admin/usuarios, protegido solo
+   * para ADMIN en el backend.
+   */
+  abrirModalNuevoUsuario() {
+    document.getElementById('form-usuario').reset();
+    document.getElementById('usuario-id').value = '';
+    document.getElementById('usuario-rol').value = 'ENCUESTADOR';
+    document.getElementById('usuario-estado').value = 'Activo';
+    document.getElementById('usuario-contrasena').placeholder = 'Mínimo 4 caracteres';
+    document.getElementById('modal-usuario-titulo').textContent = 'Registrar Encuestador';
+    document.getElementById('usuario-form-boton').innerHTML = '<ion-icon name="checkmark-circle"></ion-icon> Registrar Encuestador';
+    const errorDiv = document.getElementById('usuario-form-error');
+    errorDiv.style.display = 'none';
+    errorDiv.textContent = '';
+    document.getElementById('modal-usuario').classList.add('activo');
+  }
+
+  cerrarModalNuevoUsuario() {
+    document.getElementById('modal-usuario').classList.remove('activo');
+  }
+
+  abrirModalEditarUsuario(id) {
+    const usuario = (this.listaUsuarios || []).find(u => u.id === id);
+    if (!usuario) {
+      alert('No se encontró el usuario seleccionado.');
+      return;
+    }
+
+    document.getElementById('form-usuario').reset();
+    document.getElementById('usuario-id').value = usuario.id;
+    document.getElementById('usuario-usuario').value = usuario.usuario;
+    document.getElementById('usuario-contrasena').value = '';
+    document.getElementById('usuario-contrasena').placeholder = 'Dejar en blanco para no cambiarla';
+    document.getElementById('usuario-nombre').value = usuario.nombre;
+    document.getElementById('usuario-apellido').value = usuario.apellido;
+    document.getElementById('usuario-correo').value = usuario.correo;
+    document.getElementById('usuario-rol').value = usuario.rol;
+    document.getElementById('usuario-estado').value = usuario.estado;
+    document.getElementById('modal-usuario-titulo').textContent = 'Editar Usuario';
+    document.getElementById('usuario-form-boton').innerHTML = '<ion-icon name="checkmark-circle"></ion-icon> Guardar Cambios';
+
+    const errorDiv = document.getElementById('usuario-form-error');
+    errorDiv.style.display = 'none';
+    errorDiv.textContent = '';
+    document.getElementById('modal-usuario').classList.add('activo');
+  }
+
+  async guardarNuevoUsuario(event) {
+    event.preventDefault();
+    const errorDiv = document.getElementById('usuario-form-error');
+    errorDiv.style.display = 'none';
+    errorDiv.textContent = '';
+
+    const id = document.getElementById('usuario-id').value;
+    const contrasena = document.getElementById('usuario-contrasena').value;
+
+    if (!id && !contrasena) {
+      errorDiv.textContent = 'La contraseña es obligatoria para registrar un nuevo usuario.';
+      errorDiv.style.display = 'block';
+      return;
+    }
+
+    const payload = {
+      usuario: document.getElementById('usuario-usuario').value.trim(),
+      nombre: document.getElementById('usuario-nombre').value.trim(),
+      apellido: document.getElementById('usuario-apellido').value.trim(),
+      correo: document.getElementById('usuario-correo').value.trim(),
+      rol: document.getElementById('usuario-rol').value,
+      estado: document.getElementById('usuario-estado').value,
+    };
+    if (contrasena) {
+      payload.contrasena = contrasena;
+    }
+
+    try {
+      if (id) {
+        await this.ejecutarFetch(`/admin/usuarios/${id}`, 'PUT', payload);
+        alert('Usuario actualizado exitosamente.');
+      } else {
+        await this.ejecutarFetch('/admin/usuarios', 'POST', payload);
+        alert('Encuestador registrado exitosamente.');
+      }
+      this.cerrarModalNuevoUsuario();
+      await this.cargarAdminDashboard();
+      await this._cargarChipsEncuestadores();
+      if (this.personasSubTab === 'encuestadores') {
+        await this.cargarUsuariosRegistrados();
+      } else {
+        await this.cargarPersonasRegistradas();
+      }
+    } catch (e) {
+      errorDiv.textContent = e.message || 'No fue posible guardar el usuario.';
+      errorDiv.style.display = 'block';
+    }
   }
 
   /**
@@ -313,23 +821,25 @@ class AdminController {
    */
   async cargarAdminReportes() {
     try {
-      const metricas = await this.ejecutarFetch('/admin/conflictos/metricas');
+      const resumen = await this.ejecutarFetch('/historial/sincronizaciones/resumen');
 
       // Poblar las 3 tarjetas superiores con datos reales
       const elLotes = document.getElementById('admin-metric-lotes');
       const elNuevos = document.getElementById('admin-metric-nuevos');
       const elActualizados = document.getElementById('admin-metric-actualizados');
 
-      if (elLotes) elLotes.textContent = metricas.syncs;
-      if (elNuevos) elNuevos.textContent = metricas.totalNuevos;
-      if (elActualizados) elActualizados.textContent = metricas.totalActualizados;
+      if (elLotes) elLotes.textContent = resumen.lotes;
+      if (elNuevos) elNuevos.textContent = resumen.nuevos;
+      if (elActualizados) elActualizados.textContent = resumen.actualizados;
     } catch (e) {
       console.error('Error al cargar métricas de reportes admin:', e);
     }
 
     // Cargar la lista de sincronizaciones (asegurando que el detalle esté oculto)
+    const metricasSec = document.getElementById('admin-reportes-metricas-superiores');
     const listSec = document.getElementById('admin-reportes-lotes-seccion');
     const detSec = document.getElementById('admin-reporte-detalle-seccion');
+    if (metricasSec) metricasSec.style.display = 'grid';
     if (listSec) listSec.style.display = 'block';
     if (detSec) detSec.style.display = 'none';
     await adminReportesController.cargarReportes();
@@ -426,134 +936,6 @@ class AdminController {
       await this.cargarAdminDashboard();
     } catch (e) {
       alert(`Error al resolver conflicto: ${e.message}`);
-    }
-  }
-
-  /**
-   * Modal de registro/edición de encuestadores (Admin > Inicio). Reutiliza
-   * ejecutarFetch (URL, headers y token) y el endpoint /admin/usuarios,
-   * protegido solo para ADMIN en el backend.
-   */
-  abrirModalNuevoUsuario() {
-    document.getElementById('form-usuario').reset();
-    document.getElementById('usuario-id').value = '';
-    document.getElementById('usuario-rol').value = 'ENCUESTADOR';
-    document.getElementById('usuario-estado').value = 'Activo';
-    document.getElementById('usuario-contrasena').placeholder = 'Mínimo 4 caracteres';
-    document.getElementById('modal-usuario-titulo').textContent = 'Registrar Encuestador';
-    document.getElementById('usuario-form-boton').innerHTML = '<ion-icon name="checkmark-circle"></ion-icon> Registrar Encuestador';
-    const errorDiv = document.getElementById('usuario-form-error');
-    errorDiv.style.display = 'none';
-    errorDiv.textContent = '';
-    document.getElementById('modal-usuario').classList.add('activo');
-  }
-
-  cerrarModalNuevoUsuario() {
-    document.getElementById('modal-usuario').classList.remove('activo');
-  }
-
-  /**
-   * Carga las tarjetas de "Usuarios Registrados" en Admin > Inicio.
-   * Guarda la lista en memoria para poder abrir el modal de edición sin
-   * pedir el usuario individual al backend.
-   */
-  async cargarUsuariosRegistrados() {
-    const contenedor = document.getElementById('admin-lista-usuarios');
-    try {
-      this.listaUsuarios = await this.ejecutarFetch('/admin/usuarios');
-
-      if (!this.listaUsuarios || this.listaUsuarios.length === 0) {
-        contenedor.innerHTML = '<p style="color: var(--color-text-muted); text-align: center; padding: 12px;">No hay usuarios registrados.</p>';
-        return;
-      }
-
-      contenedor.innerHTML = this.listaUsuarios.map(u => `
-        <div class="tarjeta-blanca" style="padding: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; gap: 8px;">
-          <div>
-            <div style="font-weight: 800;">${u.nombre} ${u.apellido}</div>
-            <div style="font-size: 0.85rem; color: var(--color-text-muted);">@${u.usuario} · ${u.correo}</div>
-            <div style="margin-top: 6px; display: flex; gap: 6px;">
-              <span class="insignia ${u.rol === 'ADMIN' ? 'sincronizado' : 'pendiente'}">${u.rol}</span>
-              <span class="insignia ${u.estado === 'Activo' ? 'sincronizado' : 'pendiente'}">${u.estado}</span>
-            </div>
-          </div>
-          <button class="boton-secundario" style="padding: 6px 12px; font-size: 0.85rem; min-height: 36px; border-radius: var(--radius-md);" onclick="appAdmin.abrirModalEditarUsuario(${u.id})">
-            <ion-icon name="create-outline"></ion-icon> Editar
-          </button>
-        </div>
-      `).join('');
-    } catch (e) {
-      contenedor.innerHTML = `<p style="color: var(--color-danger); text-align: center; padding: 12px;">Error al cargar usuarios: ${e.message}</p>`;
-    }
-  }
-
-  abrirModalEditarUsuario(id) {
-    const usuario = (this.listaUsuarios || []).find(u => u.id === id);
-    if (!usuario) {
-      alert('No se encontró el usuario seleccionado.');
-      return;
-    }
-
-    document.getElementById('form-usuario').reset();
-    document.getElementById('usuario-id').value = usuario.id;
-    document.getElementById('usuario-usuario').value = usuario.usuario;
-    document.getElementById('usuario-contrasena').value = '';
-    document.getElementById('usuario-contrasena').placeholder = 'Dejar en blanco para no cambiarla';
-    document.getElementById('usuario-nombre').value = usuario.nombre;
-    document.getElementById('usuario-apellido').value = usuario.apellido;
-    document.getElementById('usuario-correo').value = usuario.correo;
-    document.getElementById('usuario-rol').value = usuario.rol;
-    document.getElementById('usuario-estado').value = usuario.estado;
-    document.getElementById('modal-usuario-titulo').textContent = 'Editar Usuario';
-    document.getElementById('usuario-form-boton').innerHTML = '<ion-icon name="checkmark-circle"></ion-icon> Guardar Cambios';
-
-    const errorDiv = document.getElementById('usuario-form-error');
-    errorDiv.style.display = 'none';
-    errorDiv.textContent = '';
-    document.getElementById('modal-usuario').classList.add('activo');
-  }
-
-  async guardarNuevoUsuario(event) {
-    event.preventDefault();
-    const errorDiv = document.getElementById('usuario-form-error');
-    errorDiv.style.display = 'none';
-    errorDiv.textContent = '';
-
-    const id = document.getElementById('usuario-id').value;
-    const contrasena = document.getElementById('usuario-contrasena').value;
-
-    if (!id && !contrasena) {
-      errorDiv.textContent = 'La contraseña es obligatoria para registrar un nuevo usuario.';
-      errorDiv.style.display = 'block';
-      return;
-    }
-
-    const payload = {
-      usuario: document.getElementById('usuario-usuario').value.trim(),
-      nombre: document.getElementById('usuario-nombre').value.trim(),
-      apellido: document.getElementById('usuario-apellido').value.trim(),
-      correo: document.getElementById('usuario-correo').value.trim(),
-      rol: document.getElementById('usuario-rol').value,
-      estado: document.getElementById('usuario-estado').value,
-    };
-    if (contrasena) {
-      payload.contrasena = contrasena;
-    }
-
-    try {
-      if (id) {
-        await this.ejecutarFetch(`/admin/usuarios/${id}`, 'PUT', payload);
-        alert('Usuario actualizado exitosamente.');
-      } else {
-        await this.ejecutarFetch('/admin/usuarios', 'POST', payload);
-        alert('Encuestador registrado exitosamente.');
-      }
-      this.cerrarModalNuevoUsuario();
-      await this.cargarAdminDashboard();
-      await this.cargarUsuariosRegistrados();
-    } catch (e) {
-      errorDiv.textContent = e.message || 'No fue posible guardar el usuario.';
-      errorDiv.style.display = 'block';
     }
   }
 }
@@ -691,12 +1073,14 @@ class AdminReportesController {
   }
 
   async abrirDetalle(id) {
+    const metricasSec = document.getElementById('admin-reportes-metricas-superiores');
     const listSec = document.getElementById('admin-reportes-lotes-seccion');
     const detSec = document.getElementById('admin-reporte-detalle-seccion');
     const detCont = document.getElementById('admin-reporte-detalle-contenido');
 
     if (!listSec || !detSec || !detCont) return;
 
+    if (metricasSec) metricasSec.style.display = 'none';
     listSec.style.display = 'none';
     detSec.style.display = 'block';
     detCont.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--color-text-muted);">Cargando detalles de sincronización...</div>';
@@ -917,6 +1301,7 @@ class AdminReportesController {
   }
 
   mostrarListaSincronizaciones() {
+    document.getElementById('admin-reportes-metricas-superiores').style.display = 'grid';
     document.getElementById('admin-reportes-lotes-seccion').style.display = 'block';
     document.getElementById('admin-reporte-detalle-seccion').style.display = 'none';
   }

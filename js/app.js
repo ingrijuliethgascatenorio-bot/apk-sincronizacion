@@ -184,11 +184,10 @@ class AppController {
       this.cargarPerfil();
     } else if (nombreTab === 'admin-inicio') {
       await adminController.cargarAdminDashboard();
-      await adminController.cargarUsuariosRegistrados();
+    } else if (nombreTab === 'admin-personas') {
+      await adminController.cargarAdminPersonasView();
     } else if (nombreTab === 'admin-inconsistencias') {
-      await adminController.cargarAdminInconsistencias();
-    } else if (nombreTab === 'admin-auditoria') {
-      await adminController.cargarAdminAuditoria();
+      await adminController.cargarAdminInconsistenciasView();
     } else if (nombreTab === 'admin-reportes') {
       await adminController.cargarAdminReportes();
     } else if (nombreTab === 'admin-perfil') {
@@ -1186,14 +1185,21 @@ window.appAdmin = {
   guardarResolucion: (e) => adminController.guardarResolucion(e),
   onBuscarInconsistencia: (e) => adminController.onBuscarInconsistencia(e),
   onBuscarAuditoria: (e) => adminController.onBuscarAuditoria(e),
-  onCambiarFechaAuditoria: (e) => adminController.onCambiarFechaAuditoria(e),
-  filtrarHoyAuditoria: () => adminController.filtrarHoyAuditoria(),
-  limpiarFiltrosAuditoria: () => adminController.limpiarFiltrosAuditoria(),
+  cambiarSubTabInconsistencias: (tab) => adminController.cambiarSubTabInconsistencias(tab),
+  cambiarSubTabPersonas: (tab) => adminController.cambiarSubTabPersonas(tab),
+  onBuscarPersonas: (e) => adminController.onBuscarPersonas(e),
+  filtrarPersonasPorEncuestador: (id, btn) => adminController.filtrarPersonasPorEncuestador(id, btn),
+  onCambiarFechaPersonas: (e) => adminController.onCambiarFechaPersonas(e),
+  toggleErroresPersonas: () => adminController.toggleErroresPersonas(),
+  limpiarFiltrosPersonas: () => adminController.limpiarFiltrosPersonas(),
   abrirModalNuevoUsuario: () => adminController.abrirModalNuevoUsuario(),
   cerrarModalNuevoUsuario: () => adminController.cerrarModalNuevoUsuario(),
   guardarNuevoUsuario: (e) => adminController.guardarNuevoUsuario(e),
   abrirModalEditarUsuario: (id) => adminController.abrirModalEditarUsuario(id),
-  cargarUsuariosRegistrados: () => adminController.cargarUsuariosRegistrados()
+  abrirModalPersonasUsuario: (id) => adminController.abrirModalPersonasUsuario(id),
+  cerrarModalPersonasUsuario: () => adminController.cerrarModalPersonasUsuario(),
+  abrirDetallePersona: (doc) => adminController.abrirDetallePersona(doc),
+  cerrarDetallePersona: () => adminController.cerrarDetallePersona()
 };
 
 window.appTema = {

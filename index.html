@@ -32,7 +32,7 @@
       <form id="form-login" onsubmit="appAuth.iniciarSesion(event)">
         <div class="campo-formulario">
           <label for="login-usuario">Usuario</label>
-          <input type="text" id="login-usuario" placeholder="Ej: encuestador1" required autocomplete="username" />
+          <input type="text" id="login-usuario" placeholder="Ej: encuestador1" required autocomplete="username"/>
         </div>
 
         <div class="campo-formulario">
@@ -305,7 +305,7 @@
             <div class="etiqueta-metrica">Inconsistencias Pendientes</div>
           </div>
 
-          <div class="tarjeta-metrica" onclick="appNavegacion.irA('admin-auditoria')">
+          <div class="tarjeta-metrica" onclick="appNavegacion.irA('admin-inconsistencias')">
             <div class="icono-circulo verde"><ion-icon name="checkmark-done-circle"></ion-icon></div>
             <div class="valor-metrica" id="admin-metric-resueltos">0</div>
             <div class="etiqueta-metrica">Inconsistencias Resueltas</div>
@@ -333,69 +333,148 @@
             </div>
           </div>
         </div>
+      </section>
 
-        <div style="margin: 20px 16px;">
-          <button class="boton-principal" style="width: 100%; min-height: 46px; display: flex; align-items: center; justify-content: center; gap: 8px;" onclick="appAdmin.abrirModalNuevoUsuario()">
-            <ion-icon name="person-add"></ion-icon> Registrar Encuestador
+      <!-- VISTA: ADMIN PERSONAS (Registradas / Encuestadores) -->
+      <section id="vista-admin-personas" class="vista-pagina">
+        <div class="encabezado-pagina">
+          <h1>Personas</h1>
+          <p id="admin-personas-subtitulo">0 registradas · 0 encuestadores activos</p>
+        </div>
+
+        <div class="contenedor-filtros" style="margin: 0 16px 16px 16px; display: flex; gap: 8px;">
+          <button class="boton-filtro activo" id="btn-subtab-personas-registradas" style="flex: 1;" onclick="appAdmin.cambiarSubTabPersonas('registradas')">
+            <ion-icon name="people-outline"></ion-icon> Registradas <span class="insignia sincronizado" id="contador-personas-registradas">0</span>
+          </button>
+          <button class="boton-filtro" id="btn-subtab-personas-encuestadores" style="flex: 1;" onclick="appAdmin.cambiarSubTabPersonas('encuestadores')">
+            <ion-icon name="briefcase-outline"></ion-icon> Usuarios <span class="insignia pendiente" id="contador-personas-encuestadores">0</span>
           </button>
         </div>
 
-        <div style="margin: 20px 16px;">
-          <h3 style="font-size: 1.1rem; font-weight: 800; margin-bottom: 12px;">Usuarios Registrados</h3>
-          <div id="admin-lista-usuarios">
-            <p style="color: var(--color-text-muted); text-align: center; padding: 12px;">Cargando usuarios...</p>
+        <!-- SUB-VISTA: PERSONAS REGISTRADAS -->
+        <div id="subvista-personas-registradas">
+          <div class="caja-buscador" style="margin: 0 16px 12px 16px;">
+            <ion-icon name="search"></ion-icon>
+            <input type="text" id="admin-personas-busqueda" placeholder="Buscar por nombre, doc o encuestador..." oninput="appAdmin.onBuscarPersonas(event)" />
+          </div>
+
+          <div id="chips-encuestadores-personas" class="contenedor-filtros" style="margin: 0 16px 16px 16px; flex-wrap: wrap; gap: 8px;">
+            <button class="boton-filtro activo" onclick="appAdmin.filtrarPersonasPorEncuestador(null, this)">Todos</button>
+          </div>
+
+          <div class="admin-filter-container" style="margin: 0 16px 16px 16px;">
+            <div class="admin-filter-date">
+              <label for="admin-personas-fecha">Filtrar por fecha</label>
+              <input type="date" id="admin-personas-fecha" onchange="appAdmin.onCambiarFechaPersonas(event)" />
+            </div>
+            <button class="admin-filter-btn" id="btn-personas-solo-errores" onclick="appAdmin.toggleErroresPersonas()">Solo con error</button>
+            <button class="admin-filter-btn" onclick="appAdmin.limpiarFiltrosPersonas()">Limpiar</button>
+          </div>
+
+          <div class="grilla-2x2" style="grid-template-columns: repeat(3, 1fr); margin: 0 16px 16px 16px;">
+            <div class="tarjeta-metrica">
+              <div class="valor-metrica" id="personas-metric-total">0</div>
+              <div class="etiqueta-metrica">Total</div>
+            </div>
+            <div class="tarjeta-metrica">
+              <div class="valor-metrica" id="personas-metric-sincronizadas" style="color: var(--color-success);">0</div>
+              <div class="etiqueta-metrica">Sincronizadas</div>
+            </div>
+            <div class="tarjeta-metrica">
+              <div class="valor-metrica" id="personas-metric-error" style="color: var(--color-danger);">0</div>
+              <div class="etiqueta-metrica">Con error</div>
+            </div>
+          </div>
+
+          <div id="lista-personas-registradas-contenedor" style="padding: 0 16px 20px 16px;">
+            <!-- Aquí se inyectan dinámicamente las personas -->
+          </div>
+          <div id="paginacion-personas-registradas" class="paginacion-contenedor" style="padding: 0 16px 80px 16px;"></div>
+        </div>
+
+        <!-- SUB-VISTA: ENCUESTADORES -->
+        <div id="subvista-personas-encuestadores" style="display: none;">
+          <div class="grilla-2x2" style="margin: 0 16px 16px 16px;">
+            <div class="tarjeta-metrica">
+              <div class="valor-metrica" id="encuestadores-metric-activos" style="color: var(--color-success);">0</div>
+              <div class="etiqueta-metrica">Activos</div>
+            </div>
+            <div class="tarjeta-metrica">
+              <div class="valor-metrica" id="encuestadores-metric-inactivos" style="color: var(--color-warning);">0</div>
+              <div class="etiqueta-metrica">Inactivos</div>
+            </div>
+          </div>
+
+          <div style="margin: 0 16px 16px 16px;">
+            <button class="boton-principal" style="width: 100%; min-height: 46px; display: flex; align-items: center; justify-content: center; gap: 8px;" onclick="appAdmin.abrirModalNuevoUsuario()">
+              <ion-icon name="person-add"></ion-icon> Agregar encuestador
+            </button>
+          </div>
+
+          <div id="admin-lista-usuarios" style="padding: 0 16px 80px 16px;">
+            <p style="color: var(--color-text-muted); text-align: center; padding: 12px;">Cargando encuestadores...</p>
           </div>
         </div>
       </section>
 
-      <!-- VISTA: ADMIN INCONSISTENCIAS -->
+      <!-- VISTA: ADMIN INCONSISTENCIAS (submenú: Inconsistencias / Auditoría) -->
       <section id="vista-admin-inconsistencias" class="vista-pagina">
         <div class="encabezado-pagina">
-          <h1>Inconsistencias de Información</h1>
-          <p>Detección de conflictos en la base de datos principal</p>
+          <h1>Inconsistencias</h1>
+          <p>Control de calidad y actividad del sistema</p>
         </div>
 
-        <div class="caja-buscador" style="margin: 0 16px 12px 16px;">
-          <ion-icon name="search"></ion-icon>
-          <input type="text" id="admin-inconsistencias-busqueda" placeholder="Buscar por documento..." oninput="appAdmin.onBuscarInconsistencia(event)" />
+        <div class="contenedor-filtros" style="margin: 0 16px 16px 16px; display: flex; gap: 8px;">
+          <button class="boton-filtro activo" id="btn-subtab-inconsistencias" style="flex: 1;" onclick="appAdmin.cambiarSubTabInconsistencias('inconsistencias')">
+            <ion-icon name="alert-circle-outline"></ion-icon> Inconsistencias
+          </button>
+          <button class="boton-filtro" id="btn-subtab-auditoria" style="flex: 1;" onclick="appAdmin.cambiarSubTabInconsistencias('auditoria')">
+            <ion-icon name="eye-outline"></ion-icon> Auditoría
+          </button>
         </div>
 
-        <div class="contenedor-filtros" style="margin-bottom: 16px; padding: 0 16px;">
-          <button class="boton-filtro activo" id="btn-filtro-conf-pendientes" onclick="appAdmin.cambiarFiltroConf('PENDIENTE', this)">Pendientes</button>
-          <button class="boton-filtro" id="btn-filtro-conf-resueltos" onclick="appAdmin.cambiarFiltroConf('RESUELTO', this)">Resueltos</button>
-        </div>
-
-        <div id="lista-conflictos-contenedor" style="padding: 0 16px 20px 16px;">
-          <!-- Aquí se inyectan dinámicamente las inconsistencias -->
-        </div>
-        <div id="paginacion-conflictos" class="paginacion-contenedor" style="padding: 0 16px 80px 16px;"></div>
-      </section>
-
-      <!-- VISTA: ADMIN AUDITORÍA -->
-      <section id="vista-admin-auditoria" class="vista-pagina">
-        <div class="encabezado-pagina">
-          <h1>Auditoría y Resoluciones</h1>
-          <p>Historial de cambios aplicados a las personas registradas</p>
-        </div>
-
-        <div class="caja-buscador" style="margin: 0 16px 12px 16px;">
-          <ion-icon name="search"></ion-icon>
-          <input type="text" id="admin-auditoria-busqueda" placeholder="Buscar por documento..." oninput="appAdmin.onBuscarAuditoria(event)" />
-        </div>
-
-        <div class="admin-filter-container" style="margin: 0 16px 16px 16px;">
-          <div class="admin-filter-date">
-            <label for="admin-auditoria-fecha">Filtrar por fecha</label>
-            <input type="date" id="admin-auditoria-fecha" onchange="appAdmin.onCambiarFechaAuditoria(event)" />
+        <!-- SUB-VISTA: INCONSISTENCIAS (conflictos de sincronización) -->
+        <div id="subvista-inconsistencias">
+          <div class="grilla-2x2" style="margin: 0 16px 16px 16px;">
+            <div class="tarjeta-metrica">
+              <div class="valor-metrica" id="inconsistencias-metric-pendientes" style="color: var(--color-danger);">0</div>
+              <div class="etiqueta-metrica">Pendientes</div>
+            </div>
+            <div class="tarjeta-metrica">
+              <div class="valor-metrica" id="inconsistencias-metric-resueltas" style="color: var(--color-warning);">0</div>
+              <div class="etiqueta-metrica">Resueltas</div>
+            </div>
           </div>
-          <button class="admin-filter-btn" onclick="appAdmin.filtrarHoyAuditoria()">Hoy</button>
-          <button class="admin-filter-btn" onclick="appAdmin.limpiarFiltrosAuditoria()">Limpiar</button>
+
+          <div class="caja-buscador" style="margin: 0 16px 12px 16px;">
+            <ion-icon name="search"></ion-icon>
+            <input type="text" id="admin-inconsistencias-busqueda" placeholder="Buscar por documento..." oninput="appAdmin.onBuscarInconsistencia(event)" />
+          </div>
+
+          <div class="contenedor-filtros" style="margin-bottom: 16px; padding: 0 16px;">
+            <button class="boton-filtro" id="btn-filtro-conf-todas" onclick="appAdmin.cambiarFiltroConf('TODAS', this)">Todas</button>
+            <button class="boton-filtro activo" id="btn-filtro-conf-pendientes" onclick="appAdmin.cambiarFiltroConf('PENDIENTE', this)">Pendientes</button>
+            <button class="boton-filtro" id="btn-filtro-conf-resueltos" onclick="appAdmin.cambiarFiltroConf('RESUELTO', this)">Resueltos</button>
+          </div>
+
+          <div id="lista-conflictos-contenedor" style="padding: 0 16px 20px 16px;">
+            <!-- Aquí se inyectan dinámicamente las inconsistencias -->
+          </div>
+          <div id="paginacion-conflictos" class="paginacion-contenedor" style="padding: 0 16px 80px 16px;"></div>
         </div>
 
-        <div id="lista-auditoria-contenedor" style="padding: 0 16px 20px 16px;">
-          <!-- Aquí se inyectan las resoluciones y auditorías -->
+        <!-- SUB-VISTA: AUDITORÍA (timeline general de cambios) -->
+        <div id="subvista-auditoria" style="display: none;">
+          <div class="caja-buscador" style="margin: 0 16px 12px 16px;">
+            <ion-icon name="search"></ion-icon>
+            <input type="text" id="admin-auditoria-busqueda" placeholder="Buscar por usuario o acción..." oninput="appAdmin.onBuscarAuditoria(event)" />
+          </div>
+
+          <div id="lista-auditoria-contenedor" style="padding: 0 16px 20px 16px;">
+            <!-- Aquí se inyecta el timeline de cambios -->
+          </div>
+          <div id="paginacion-auditoria" class="paginacion-contenedor" style="padding: 0 16px 80px 16px;"></div>
         </div>
-        <div id="paginacion-auditoria" class="paginacion-contenedor" style="padding: 0 16px 80px 16px;"></div>
       </section>
 
       <!-- VISTA: ADMIN REPORTES -->
@@ -407,7 +486,7 @@
 
         <div style="padding: 0 16px 20px 16px;">
           <!-- 3 tarjetas métricas de sincronización -->
-          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px;">
+          <div id="admin-reportes-metricas-superiores" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px;">
             <div class="tarjeta-metrica">
               <div class="icono-circulo morado"><ion-icon name="sync-circle"></ion-icon></div>
               <div class="valor-metrica" id="admin-metric-lotes">0</div>
@@ -537,19 +616,19 @@
         <span>Inicio</span>
       </button>
 
-      <button class="boton-tab" data-tab="admin-inconsistencias" onclick="appNavegacion.irA('admin-inconsistencias')">
-        <span class="icono-tab"><ion-icon name="alert-circle"></ion-icon></span>
-        <span>Inconsistencias</span>
-      </button>
-
-      <button class="boton-tab" data-tab="admin-auditoria" onclick="appNavegacion.irA('admin-auditoria')">
-        <span class="icono-tab"><ion-icon name="eye"></ion-icon></span>
-        <span>Auditoría</span>
+      <button class="boton-tab" data-tab="admin-personas" onclick="appNavegacion.irA('admin-personas')">
+        <span class="icono-tab"><ion-icon name="people"></ion-icon></span>
+        <span>Personas</span>
       </button>
 
       <button class="boton-tab" data-tab="admin-reportes" onclick="appNavegacion.irA('admin-reportes')">
         <span class="icono-tab"><ion-icon name="pie-chart"></ion-icon></span>
         <span>Reportes</span>
+      </button>
+
+      <button class="boton-tab" data-tab="admin-inconsistencias" onclick="appNavegacion.irA('admin-inconsistencias')">
+        <span class="icono-tab"><ion-icon name="alert-circle"></ion-icon></span>
+        <span>Inconsistencias</span>
       </button>
 
       <button class="boton-tab" data-tab="admin-perfil" onclick="appNavegacion.irA('admin-perfil')">
@@ -756,7 +835,7 @@
       </div>
     </div>
 
-    <!-- MODAL: REGISTRAR / EDITAR ENCUESTADOR (ADMIN > INICIO) -->
+    <!-- MODAL: REGISTRAR / EDITAR ENCUESTADOR (ADMIN > PERSONAS > ENCUESTADORES) -->
     <div id="modal-usuario" class="modal-overlay">
       <div class="modal-contenido">
         <div class="modal-header">
@@ -815,6 +894,38 @@
               <ion-icon name="checkmark-circle"></ion-icon> Registrar Encuestador
             </button>
           </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: PERSONAS REGISTRADAS POR UN ENCUESTADOR (AUDITORÍA DESDE PERSONAS) -->
+    <div id="modal-personas-usuario" class="modal-overlay">
+      <div class="modal-contenido" style="max-height: 90vh; overflow-y: auto;">
+        <div class="modal-header">
+          <h2 id="modal-personas-usuario-titulo">Personas Registradas</h2>
+          <button class="boton-cerrar-modal" onclick="appAdmin.cerrarModalPersonasUsuario()">✕</button>
+        </div>
+
+        <div class="modal-body" style="padding: 16px;">
+          <div id="lista-personas-usuario-contenedor">
+            <p style="color: var(--color-text-muted); text-align: center; padding: 12px;">Cargando personas...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: DETALLE DE PERSONA (ADMIN > PERSONAS > REGISTRADAS) -->
+    <div id="modal-detalle-persona" class="modal-overlay">
+      <div class="modal-contenido" style="max-height: 90vh; overflow-y: auto;">
+        <div class="modal-header">
+          <h2 id="detalle-persona-titulo">Detalle de Persona</h2>
+          <button class="boton-cerrar-modal" onclick="appAdmin.cerrarDetallePersona()">✕</button>
+        </div>
+
+        <div class="modal-body" style="padding: 16px;">
+          <div id="detalle-persona-contenido">
+            <p style="color: var(--color-text-muted); text-align: center; padding: 12px;">Cargando...</p>
+          </div>
         </div>
       </div>
     </div>
